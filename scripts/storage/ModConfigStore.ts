@@ -110,8 +110,8 @@ export class ModConfigStore {
         const parsed = JSON.parse(raw) as Partial<ModConfig>;
         this.cached = {
           tokenItemId: parsed.tokenItemId ?? DEFAULT_TOKEN,
-          maxWarehouseVolume: parsed.maxWarehouseVolume ?? 16384,
-          maxContainers: parsed.maxContainers ?? 200,
+          maxWarehouseVolume: parsed.maxWarehouseVolume ?? 4096,
+          maxContainers: parsed.maxContainers ?? 50,
         };
         return this.cached;
       } catch {
@@ -119,7 +119,7 @@ export class ModConfigStore {
       }
     }
 
-    this.cached = { tokenItemId: DEFAULT_TOKEN, maxWarehouseVolume: 16384, maxContainers: 200 };
+    this.cached = { tokenItemId: DEFAULT_TOKEN, maxWarehouseVolume: 4096, maxContainers: 50 };
     return this.cached;
   }
 

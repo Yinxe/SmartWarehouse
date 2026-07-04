@@ -220,11 +220,14 @@ export class SorterEngine {
 
       const loc = stored.primaryLocation;
 
+      // ── 快速判空：输入容器全空 → 仓库进入空闲 ──
+      // 当前输入容器为空 → 跳过，游标下个 interval 选下一个容器
+      if (container.emptySlotsCount === container.size) return;
+
       // ── 槽位游标：取当前格 ──
       let slot = model.inputSlotCursors.get(containerId) ?? 0;
       if (slot >= container.size) slot = 0;
 
-      // 如果当前格为空，直接跳到下一个非空槽（不浪费 interval）
       const stack = container.getItem(slot);
       if (!stack) {
         const nextSlot = this.findNextNonEmptySlot(container, slot);

@@ -307,6 +307,8 @@ export interface WarehouseRuntimeModel {
   inputSlotCursors: Map<ContainerId, number>;
   /** 最后一次重建索引的游戏刻时间戳 */
   lastBuiltAt: number;
+  /** 空闲状态（保留字段，暂不使用） */
+  idle: boolean;
   /**
    * "脏"标记。当仓库数据发生变更时设为 true，
    * 触发按需重建运行时索引，避免每次操作都重建。

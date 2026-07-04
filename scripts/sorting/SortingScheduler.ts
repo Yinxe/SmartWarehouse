@@ -199,7 +199,7 @@ export class SortingScheduler {
       for (const p of world.getPlayers()) {
         if (p.dimension.id !== w.dimensionId) continue;
         if (isNearAreaXZ({ x: p.location.x, z: p.location.z }, w.area, SortingScheduler.PROXIMITY_MARGIN)) {
-          try { p.sendMessage(`§a仓库 §e${w.displayName}§a 已激活，开始分拣`); } catch { /* 忽略 */ }
+          try { p.sendMessage(`§a仓库 §e${w.displayName}§a 已进入工作状态`); } catch { /* 忽略 */ }
         }
       }
     }
