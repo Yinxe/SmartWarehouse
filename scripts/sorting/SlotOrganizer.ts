@@ -2,6 +2,7 @@ import { system, ItemStack, type Container } from "@minecraft/server";
 import type { ContainerId } from "../types";
 import { Logger } from "../util/Logger";
 import { restoreContainerSnapshot, snapshotContainer } from "./ContainerSnapshot";
+import { calculateMessiness as domainCalculateMessiness } from "../domain/inventory/MessinessScore";
 
 const log = new Logger("SlotOrganizer");
 
@@ -207,66 +208,27 @@ export class SlotOrganizer {
     const endSlot = Math.min(opts.endSlot, container.size);
     const startSlot = Math.max(0, opts.startSlot);
 
-    // 读取物品
+    // 读取物品并委托给领域层纯函数
     const items: ItemStack[] = [];
-    const slotTypes: (string | undefined)[] = [];
     let lastNonEmptySlot = -1;
 
     for (let slot = startSlot; slot < endSlot; slot++) {
       if (opts.lockedSlots?.has(slot)) continue;
       try {
         const stack = container.getItem(slot);
-        slotTypes.push(stack?.typeId);
         if (stack) {
           items.push(stack);
           lastNonEmptySlot = slot;
         }
       } catch {
-        slotTypes.push(undefined);
+        // 跳过读取失败的槽位
       }
     }
 
-    const nonEmptySlots = items.length;
     const effectiveSlots = lastNonEmptySlot - startSlot + 1;
-
-    if (nonEmptySlots <= 1) {
-      return { total: 0, order: 0, stack: 0, effectiveSlots, disorderSlots: 0, nonEmptySlots, suboptimalStacks: 0 };
-    }
-
-    // ── 顺序评分（50%）—— 相邻逆序对 ──
-    // 只统计非空物品间的相邻逆序对，一个错位只影响相邻关系，不会级联拉满
-    // 例：[A,C,B,D] → 仅 C>B 一对逆序 → 1/3 × 0.5 = 0.17
-    const typeSeq = items.map((i) => i.typeId);
-    let inversions = 0;
-    for (let i = 0; i < typeSeq.length - 1; i++) {
-      if (typeSeq[i].localeCompare(typeSeq[i + 1]) > 0) inversions++;
-    }
-    const maxInversions = Math.max(1, typeSeq.length - 1);
-    const order = (inversions / maxInversions) * 0.5;
-
-    // ── 堆叠评分（50%） ──
-    // 按 typeId 分组统计堆叠情况
-    const typeGroups = new Map<string, { stacks: number; nonFull: number }>();
-    for (const item of items) {
-      let g = typeGroups.get(item.typeId);
-      if (!g) {
-        g = { stacks: 0, nonFull: 0 };
-        typeGroups.set(item.typeId, g);
-      }
-      g.stacks++;
-      if (item.amount < item.maxAmount) g.nonFull++;
-    }
-
-    let suboptimalStacks = 0;
-    for (const g of typeGroups.values()) {
-      // 同种物品有 2+ 组未满堆叠才记入未优化
-      if (g.nonFull >= 2) suboptimalStacks += g.nonFull;
-    }
-
-    const stack = nonEmptySlots > 0 ? (suboptimalStacks / nonEmptySlots) * 0.5 : 0;
-    const total = Math.min(1, order + stack);
-
-    return { total, order, stack, effectiveSlots, disorderSlots: inversions, nonEmptySlots, suboptimalStacks };
+    const score = domainCalculateMessiness(items);
+    score.effectiveSlots = effectiveSlots;
+    return score;
   }
 
   // ═══════════════════════════════════════════════════════════════
