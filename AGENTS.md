@@ -23,43 +23,55 @@ https://raw.githubusercontent.com/SkyEye-FAST/mcbe-chinese-patch/main/extracted/
 - **格式化工**具: Prettier (配置见 `.prettierrc.json`)
 - **ESLint**: `eslint-plugin-minecraft-linting`
 
-### 2. 项目结构
+### 2. 项目结构（DDD 分层）
 ```
 BP/                   行为包（manifest.json + scripts 编译产物）
 RP/                   资源包
 scripts/              TypeScript 源码
-  main.ts             入口文件（初始化依赖、注册事件和命令）
-  types.ts            集中式类型定义（接口、类型别名、常量）
-  commands/           命令路由层（解析输入、校验权限、委托服务层）
-  data/               数据文件（物品家族分类、中文名映射）
-    ItemFamilies.ts   按 51 个家族分类的 1431 个物品（自动生成，勿手动修改）
-    name-maps/        物品/实体/效果/附魔中文名映射表
-  interaction/        工具交互（木锄右键/方块事件处理）
-  runtime/            运行时缓存层（内存索引、脏标记、惰性重建）
-  sorting/            分拣引擎和调度器
-  storage/            持久化层（Minecraft Dynamic Property 读写）
-  ui/                 玩家交互界面（ActionForm / ModalForm）
-  util/               工具函数（日志、坐标、JSON、权限）
-  warehouse/          核心业务逻辑（仓库 CRUD、容器扫描）
-tools/                维护工具
-  generateItemFamilies.mjs  物品家族生成器（修改分类后需运行）
-  annotateFamilies.mjs      中文注释注入器（运行注入中文名）
+  main.ts             入口文件（依赖注入、注册事件和命令）
+  types.ts            类型 re-export 汇集点（barrel）
+  domain/             领域层（纯业务逻辑，零 Minecraft 依赖）
+    shared/           共享值对象（Vector、Json、errors、identifiers）
+    inventory/        容器清单值对象（MessinessScore、shulker box）
+    sorting/          分拣策略（SortingPolicy、CapacityCheck、FamilyPurity、IndexSelfHealing）
+    warehouse/        仓库聚合（ContainerTypes、WarehouseTypes、ContainerId、WarehouseRuntimeModel）
+  application/        应用层（用例编排 + 端口接口）
+    ports/            端口定义（仓库仓储、容器访问、世界访问、通知、调度、统计）
+    sorting/          分拣用例（SortWarehouseUseCase、SchedulingUseCase）
+    warehouse/        仓库用例（Create/Delete/Rescan/UpdateSettings/SetContainerRole/Rename）
+  infrastructure/     基础设施层（Minecraft 运行时适配器）
+    Logger.ts         日志工具
+    PlayerAuth.ts     玩家权限校验
+    WarehouseStatsService.ts  容器统计计算与缓存
+    cache/            运行时缓存（WarehouseRuntimeRegistry）
+    persistence/      持久化（DynamicPropertyStore、ModConfigStore、WarehouseRepository、WarehouseStatsStore）
+    minecraft/        Minecraft 适配器
+      container/      容器访问（ContainerAccess、ContainerSnapshot、MoveJournal、SlotOrganizer）
+      scheduling/     分拣调度（SortingScheduler）
+      SorterEngine.ts、WarehouseService.ts、ContainerScanner.ts、SafeProbe.ts 等
+  commands/           输入层——命令路由（CommandRouter）+ Handler
+  interaction/        输入层——工具交互（木锄右键事件处理）
+  ui/                 输入层——玩家界面（ActionForm/ModalForm）+ 格式化
+  data/               数据文件（ItemFamilies、name-maps）
+tools/                维护工具（generateItemFamilies.mjs、annotateFamilies.mjs）
 ```
 
-### 3. 架构分层
+### 3. 架构分层（DDD 四层）
 ```
-UI/ToolInteraction/CommandRouter  ← 输入层（事件驱动）
-        ↓
-  WarehouseService                 ← 业务层（核心逻辑）
+输入层（Input Layer）
+  commands/     ← Minecraft 命令注册 + 参数解析 + 权限校验
+  interaction/  ← 方块交互事件 + 工具处理
+  ui/           ← ActionForm/ModalForm 界面显示 + 格式化
+        ↓ 委托
+应用层（Application Layer）
+  application/ports/     ← 端口接口（解耦依赖）
+  application/*UseCase   ← 用例编排（事务+协调）
        ↙        ↘
-WarehouseRepository   ContainerScanner  ← 数据层 + 扫描
-       ↓
-  DynamicPropertyStore              ← 持久化
-       ↓
-  Minecraft Dynamic Properties
-
-WarehouseRuntimeRegistry ← 运行时缓存（内存索引 + 惰性重建）
-SortingScheduler → SorterEngine ← 分拣子系统
+领域层（Domain Layer）   基础设施层（Infrastructure Layer）
+  domain/          ←→    infrastructure/
+  纯业务逻辑              Minecraft 运行时适配器
+  零外部依赖              持久化、容器访问、粒子效果
+  可单元测试              调度器、搜索引擎
 ```
 
 ### 4. 命名规范
@@ -87,10 +99,12 @@ SortingScheduler → SorterEngine ← 分拣子系统
 import { world, system } from "@minecraft/server";
 // 2. 仅类型导入时使用 type 关键字
 import type { Vector3 } from "@minecraft/server";
-// 3. 内部模块（相对路径）
-import { normalizeWarehouseId } from "../storage/WarehouseRepository";
-import { Logger } from "../util/Logger";
-import type { WarehouseService } from "../warehouse/WarehouseService";
+// 3. 内部模块（相对路径）—— 按 DDD 层导入
+import { normalizeWarehouseId } from "../infrastructure/persistence/WarehouseRepository";
+import { Logger } from "../infrastructure/Logger";
+import type { WarehouseService } from "../infrastructure/minecraft/WarehouseService";
+import { computeRouteOrder } from "../domain/sorting/SortingPolicy";
+import type { CreateWarehouseUseCase } from "../application/warehouse/CreateWarehouseUseCase";
 // 4. 同类导入可混合
 import { system, type Dimension } from "@minecraft/server";
 import { world, type Player, type CustomCommand } from "@minecraft/server";
@@ -253,10 +267,13 @@ type ParseResult = { ok: true; id: WarehouseId } | { ok: false; message: string 
 ```typescript
 // 每次脚本重载时执行一次，一次性初始化所有子系统
 const repository = new WarehouseRepository();
-const runtime = new WarehouseRuntimeRegistry(repository);
-const service = new WarehouseService(repository, undefined, (id) => runtime.markDirty(id));
+const runtime = new WarehouseRuntimeRegistry((id) => repository.load(id));
+const engine = new SorterEngine(repository, runtime, organizer);
+const scheduler = new SortingScheduler(repository, engine);
+const service = new WarehouseService(repository, configStore, undefined,
+  (id) => runtime.markDirty(id), (id) => scheduler.refreshOne(id), boundaryDisplay);
 service.registerBlockMaintenance();
-registerToolInteraction(service);
+registerToolInteraction(repository, service, configStore);
 commandRouter.register();
 scheduler.start();
 ```
