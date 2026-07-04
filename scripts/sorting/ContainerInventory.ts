@@ -1,8 +1,9 @@
 import type { BlockInventoryComponent, Dimension, ItemInventoryComponent } from "@minecraft/server";
 import { Container, ItemStack } from "@minecraft/server";
 import type { StoredContainer } from "../types";
-import { SHULKER_BOX_IDS } from "../warehouse/ContainerTypes";
 import type { MoveJournal } from "./MoveJournal";
+import { isShulkerBoxItem } from "../domain/inventory/ContainerInventory";
+export { isShulkerBoxItem } from "../domain/inventory/ContainerInventory";
 
 /**
  * 安全地从持久化存储的容器信息中获取 Minecraft 方块容器对象（`Container`）。
@@ -171,16 +172,6 @@ export function getFamilyPurity(container: Container, familyMemberSet: Set<strin
 }
 
 // ─── 大宗容器专用函数（潜影盒内容读取与填充） ────────────────────
-
-/**
- * 判断物品堆是否为潜影盒（任意颜色）。
- *
- * @param stack - 要检查的物品堆
- * @returns 如果是潜影盒则返回 true
- */
-export function isShulkerBoxItem(stack: ItemStack): boolean {
-  return SHULKER_BOX_IDS.has(stack.typeId);
-}
 
 /**
  * 获取大宗容器当前存储的物品种类。
