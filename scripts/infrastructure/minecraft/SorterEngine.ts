@@ -3,7 +3,7 @@ import { getFamily, getFamilyById } from "../../data/ItemFamilies";
 import { WarehouseRuntimeRegistry } from "../cache/WarehouseRuntimeRegistry";
 import { WarehouseRepository } from "../persistence/WarehouseRepository";
 import type { ContainerId, WarehouseData, WarehouseId, WarehouseRuntimeModel } from "../../types";
-import { getOrComputeContainerStats, refreshContainerStats } from "../../ui/WarehouseStats";
+import { getOrComputeContainerStats, refreshContainerStats } from "../WarehouseStatsService";
 import { Logger } from "../Logger";
 import { isNearAreaXZ } from "../../domain/shared/Vector";
 import {

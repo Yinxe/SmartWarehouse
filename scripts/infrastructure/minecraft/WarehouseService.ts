@@ -19,7 +19,7 @@ import { makeContainerId } from "../../domain/warehouse/ContainerId";
 import { compareLocationForPrimary } from "../../domain/shared/Vector";
 import { BoundaryDisplay } from "./BoundaryDisplay";
 import { diffRescanContainers } from "../../domain/warehouse/WarehouseRescanDiff";
-import { invalidateWarehouseStats } from "../../ui/WarehouseStats";
+import { invalidateWarehouseStats } from "../WarehouseStatsService";
 import type { WarehouseRescanDiff } from "../../domain/warehouse/WarehouseRescanDiff";
 import type { ModConfigStore } from "../persistence/ModConfigStore";
 
