@@ -34,22 +34,11 @@ export function getContainerFromStored(dimension: Dimension, stored: StoredConta
 /**
  * 查找容器中的第一个非空物品槽位。
  *
- * 这是分拣流程的起点 —— `SorterEngine` 在处理每个输入容器时，
- * 首先调用此方法定位要分拣的物品堆。
- *
- * 采用线性扫描方式遍历所有槽位（0 ~ container.size - 1），
- * 返回第一个有物品的槽位索引。对于小型容器（如单个箱子 27 格），
- * 线性扫描的开销可以忽略不计。
- *
  * @param container - 要扫描的容器对象
  * @returns 第一个非空槽位的索引，如果所有槽位都为空则返回 -1
  */
 export function findFirstNonEmptySlot(container: Container): number {
-  for (let slot = 0; slot < container.size; slot++) {
-    const item = container.getItem(slot);
-    if (item !== undefined) return slot;
-  }
-  return -1;
+  return container.firstItem() ?? -1;
 }
 
 /**
@@ -65,11 +54,7 @@ export function findFirstNonEmptySlot(container: Container): number {
  * @returns 如果容器中至少有一个物品的 typeId 匹配，则返回 true
  */
 export function containerHasType(container: Container, typeId: string): boolean {
-  for (let slot = 0; slot < container.size; slot++) {
-    const item = container.getItem(slot);
-    if (item && item.typeId === typeId) return true;
-  }
-  return false;
+  return container.contains(new ItemStack(typeId, 1));
 }
 
 /**
