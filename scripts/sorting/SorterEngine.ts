@@ -18,7 +18,7 @@ import { MoveJournal } from "./MoveJournal";
 import { playSortEffect } from "./SortEffects";
 import { SlotOrganizer } from "./SlotOrganizer";
 import { getFamily, getFamilyById } from "../data/ItemFamilies";
-import { isContainerFull, refreshContainerStats } from "../ui/WarehouseStats";
+import { refreshContainerStats } from "../ui/WarehouseStats";
 import { isNearAreaXZ } from "../util/Vector";
 
 const log = new Logger("SorterEngine");
@@ -346,75 +346,68 @@ export class SorterEngine {
     remaining = this.tryBulkContainers(remaining, bulkMatches, warehouse, model, dimension, typeId, journal);
     if (remaining === undefined) return undefined;
 
+    /** 前一级别剩余量，用于检测降级 */
+    let prevAmount = remaining.amount;
+
+    // ── 辅助：执行一级 tryContainers，检测降级 ─────────────────
+    // 如果前一级别完全没消化，但本级消化了 → 说明降级发生
+    const tryLevel = (
+      ids: ContainerId[], tag: string,
+      onDowngrade: (from: string) => void
+    ): ItemStack | undefined => {
+      const before = remaining?.amount ?? 0;
+      const result = this.tryContainers(remaining, ids, warehouse, model, dimension, typeId, journal, tag);
+      if (result === undefined) return undefined;
+      if (before > 0 && result.amount < before && prevAmount > 0 && result.amount === prevAmount) {
+        // 前一级别全没消化，本级消化了 → 降级
+        onDowngrade(tag);
+      }
+      prevAmount = result.amount;
+      return result;
+    };
+
     // ── 优先级 2：多物品（普通）────────────────────────────────
-    // 已有同类物品的普通容器，用于多物品混合分类。
-    // 放在大宗之后：大宗拦截高产量单品后，剩余散品走普通分类。
-    const existingTypeContainers = this.findExistingTypeContainers(warehouse, model, typeId, dimension);
-    remaining = this.tryContainers(
-      remaining,
-      existingTypeContainers,
-      warehouse,
-      model,
-      dimension,
-      typeId,
-      journal,
-      "match"
+    remaining = tryLevel(
+      this.findExistingTypeContainers(warehouse, model, typeId, dimension),
+      "match",
+      () => this.warnDowngrade(warehouse, typeId, "bulk", "normal")
     );
     if (remaining === undefined) return undefined;
 
     // ── 优先级 3：家庭同族 ──────────────────────────────────────
-    // 检查物品是否属于已启用的同族分类，若是则将同族物品聚集到同一容器。
-    // 放在大宗和普通之后：确保专用分类优先，同族聚集作为兜底归类手段。
     const family = getFamily(typeId);
     const enabledFamilies = warehouse.settings.enabledFamilies ?? [];
     if (family && enabledFamilies.includes(family.id)) {
-      const familyContainers = this.findExistingFamilyContainers(warehouse, model, family.id, dimension);
-      remaining = this.tryContainers(
-        remaining,
-        familyContainers,
-        warehouse,
-        model,
-        dimension,
-        typeId,
-        journal,
-        "family"
+      remaining = tryLevel(
+        this.findExistingFamilyContainers(warehouse, model, family.id, dimension),
+        "family",
+        () => {} // 同是 normal 角色，同级不警告
       );
       if (remaining === undefined) return undefined;
     }
 
     // ── 优先级 4：自动创建分类 ────────────────────────────────
-    // 当开启 autoCreateCategories 时，找一个空的 normal 容器
-    // 作为新物品类型的专用分类箱。
-    // 放在杂项之前：优先为物品建立专有分类，避免散落入杂项。
     if (warehouse.settings.autoCreateCategories) {
       const freeNormal = this.findEmptyNormalContainer(warehouse, model, dimension);
       if (freeNormal) {
-        remaining = this.tryContainers(
-          remaining,
-          [freeNormal],
-          warehouse,
-          model,
-          dimension,
-          typeId,
-          journal,
-          "autocreate"
-        );
+        remaining = tryLevel([freeNormal], "autocreate", () => {});
         if (remaining === undefined) return undefined;
       }
     }
 
     // ── 优先级 5：杂项（兜底）──────────────────────────────────
-    remaining = this.tryContainers(
-      remaining,
+    remaining = tryLevel(
       model.miscContainerIds,
-      warehouse,
-      model,
-      dimension,
-      typeId,
-      journal,
-      "misc"
+      "misc",
+      () => this.warnDowngrade(warehouse, typeId, "normal", "misc")
     );
-    return remaining; // 返回 undefined 表示最后一个容器处理完了全部
+
+    // 全满 → 通知玩家手动处理
+    if (remaining && remaining.amount > 0 && remaining.amount === prevAmount) {
+      this.warnAllFull(warehouse, typeId);
+    }
+
+    return remaining;
   }
 
   /**
@@ -495,15 +488,9 @@ export class SorterEngine {
         if (stats) {
           this.checkAndWarnCapacity(warehouse, containerId, stored, stats);
         }
-      } else if (placed === 0 && beforeAmount > 0 && isContainerFull(targetContainer)) {
-        // 物品无法放入（容器已满），尝试发送预警
-        this.warnCapacity(
-          warehouse,
-          containerId,
-          stored,
-          `§e${stored.role === "normal" ? "普通" : stored.role === "bulk" ? "大宗" : "杂项"}容器已满，物品将转移至其他容器`
-        );
       }
+      // 注：同类型容器间溢出（同一级别内）属正常扩容行为，不告警
+      // 跨类型降级告警在 moveStackIntoWarehouse 的 tryLevel 中处理
 
       if (remaining === undefined) return undefined; // 全部放完，提前退出
     }
@@ -586,13 +573,6 @@ export class SorterEngine {
         if (bulkStats) {
           this.checkAndWarnCapacity(warehouse, containerId, stored, bulkStats);
         }
-      } else if (placed === 0 && beforeAmount > 0 && isContainerFull(target)) {
-        this.warnCapacity(
-          warehouse,
-          containerId,
-          stored,
-          `§e大宗容器已满，物品将转移至其他容器`
-        );
       }
 
       if (remaining === undefined) return undefined;
@@ -618,42 +598,54 @@ export class SorterEngine {
     if (!stored.capacityWarningEnabled) return;
     if (!stats.isWarning) return;
 
+    // 容器级冷却防刷
+    const last = this.warningCooldowns.get(containerId) ?? 0;
+    if (system.currentTick - last < CAPACITY_WARNING_COOLDOWN_TICKS) return;
+    this.warningCooldowns.set(containerId, system.currentTick);
+
     const roleLabel = stored.role === "normal" ? "普通" : stored.role === "bulk" ? "大宗" : stored.role === "misc" ? "杂项" : "输入";
     const pct = stats.totalSlots > 0 ? Math.round((stats.usedSlots / stats.totalSlots) * 100) : 0;
-    this.warnCapacity(
+    this.sendWarnToNearby(
       warehouse,
-      containerId,
-      stored,
-      `§e${roleLabel}容器 ${containerId.slice(-8)} §7容量告急 §f${stats.usedSlots}§7/§f${stats.totalSlots}§7(§c${pct}%§7)`
+      `§e${roleLabel}容器 ${containerId.slice(-8)} 容量 ${stats.usedSlots}/${stats.totalSlots}(${pct}%)`
     );
   }
 
   /**
-   * 向仓库附近的玩家发送预警消息。
+   * 降级预警：物品从高优先级角色降到低优先级角色（如 Bulk→Normal、Normal→Misc）。
+   * 使用角色级别 cooldown 防刷。
    */
-  private warnCapacity(
-    warehouse: WarehouseData,
-    containerId: string,
-    _stored: import("../types").StoredContainer,
-    message: string
-  ): void {
-    // 防刷：每个容器每 5 秒最多发一次预警
-    const lastTick = this.warningCooldowns.get(containerId) ?? 0;
-    if (system.currentTick - lastTick < CAPACITY_WARNING_COOLDOWN_TICKS) return;
-    this.warningCooldowns.set(containerId, system.currentTick);
+  private warnDowngrade(warehouse: WarehouseData, typeId: string, from: string, to: string): void {
+    const key = `downgrade:${warehouse.id}:${from}->${to}`;
+    const last = this.warningCooldowns.get(key) ?? 0;
+    if (system.currentTick - last < CAPACITY_WARNING_COOLDOWN_TICKS) return;
+    this.warningCooldowns.set(key, system.currentTick);
 
+    this.sendWarnToNearby(warehouse, `§e${from}容器已满，${typeId} 降级至${to}容器`);
+  }
+
+  /**
+   * 全满预警：所有容器都放不下了，物品滞留在输入容器。
+   */
+  private warnAllFull(warehouse: WarehouseData, typeId: string): void {
+    const key = `allfull:${warehouse.id}`;
+    const last = this.warningCooldowns.get(key) ?? 0;
+    if (system.currentTick - last < CAPACITY_WARNING_COOLDOWN_TICKS * 3) return; // 全满冷却更长
+    this.warningCooldowns.set(key, system.currentTick);
+
+    this.sendWarnToNearby(warehouse, `§c${typeId} 无法分类！所有容器已满，请手动整理杂项容器或扩容`);
+  }
+
+  /** 向仓库附近玩家发送预警消息。 */
+  private sendWarnToNearby(warehouse: WarehouseData, message: string): void {
     try {
       for (const player of world.getPlayers()) {
         if (player.dimension.id !== warehouse.dimensionId) continue;
         if (isNearAreaXZ({ x: player.location.x, z: player.location.z }, warehouse.area, 8)) {
-          try {
-            player.sendMessage(`§c[容量预警]§r ${message}`);
-          } catch { /* 忽略 */ }
+          try { player.sendMessage(`§c[仓库]§r ${message}`); } catch { /* 忽略 */ }
         }
       }
-    } catch {
-      /* world.getPlayers 可能抛出异常 */
-    }
+    } catch { /* 忽略 */ }
   }
 
   // ─── itemTypeIndex 索引辅助方法 ────────────────────────────────
