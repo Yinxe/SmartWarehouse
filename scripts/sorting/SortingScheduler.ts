@@ -176,11 +176,14 @@ export class SortingScheduler {
   }
 
   /**
-   * 激活仓库：创建 runInterval + 通知附近玩家。
+   * 激活仓库：重置游标 + 创建 runInterval + 通知附近玩家。
    */
   private activate(id: WarehouseId, speed: number): void {
     // 确保没有重复的 handle
     this.stopOne(id);
+
+    // 重置游标，确保每次激活从头开始处理，防止游标越界或跳过容器
+    this.engine.resetCursors(id);
 
     const handle = system.runInterval(() => {
       try {

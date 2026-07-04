@@ -5,7 +5,7 @@
  *
  * 职责：
  * 1. 提供信物配选择界面（下拉选择框）
- * 2. 配置仓库最大体积和单仓库最大容器数
+ * 2. 配置仓库最大尺寸（三轴独立选择）和单仓库最大容器数
  * 3. 仅管理员可访问
  * 4. 配置通过 ModConfigStore 持久化到 DynamicProperty
  * ============================================================================
@@ -14,7 +14,7 @@
 import { type Player } from "@minecraft/server";
 import { ModalFormBuilder } from "./FormHelper";
 import type { ModConfigStore } from "../storage/ModConfigStore";
-import { TOKEN_OPTIONS, VOLUME_OPTIONS, CONTAINER_OPTIONS } from "../storage/ModConfigStore";
+import { TOKEN_OPTIONS, SIZE_OPTIONS, CONTAINER_OPTIONS } from "../storage/ModConfigStore";
 import { canManageWarehouse } from "../util/PlayerAuth";
 
 /**
@@ -31,31 +31,35 @@ export async function showConfigUI(player: Player, configStore: ModConfigStore):
 
   const config = configStore.load();
   const tokenIdx = TOKEN_OPTIONS.findIndex((o) => o.itemId === config.tokenItemId);
-  const volIdx = VOLUME_OPTIONS.findIndex((o) => o.value === config.maxWarehouseVolume);
+  const sizeIdx = SIZE_OPTIONS.findIndex(
+    (o) => o.sizeX === config.maxSizeX && o.sizeY === config.maxSizeY && o.sizeZ === config.maxSizeZ
+  );
   const conIdx = CONTAINER_OPTIONS.findIndex((o) => o.value === config.maxContainers);
 
   const vals = await new ModalFormBuilder()
     .title("SmartWarehouse 配置")
     .label("info", "§7配置模组的全局设置")
     .dropdown("token", "§a选择信物", TOKEN_OPTIONS.map((o) => o.label), { defaultValueIndex: Math.max(0, tokenIdx) })
-    .dropdown("volume", "§a仓库最大体积", VOLUME_OPTIONS.map((o) => o.label), { defaultValueIndex: Math.max(0, volIdx) })
+    .dropdown("size", "§a仓库最大尺寸", SIZE_OPTIONS.map((o) => o.label), { defaultValueIndex: Math.max(0, sizeIdx) })
     .dropdown("containers", "§a单仓库最大容器数", CONTAINER_OPTIONS.map((o) => o.label), { defaultValueIndex: Math.max(0, conIdx) })
     .show(player);
 
   if (!vals) return;
 
   const tIdx = vals.token as number;
-  const vIdx = vals.volume as number;
+  const sIdx = vals.size as number;
   const cIdx = vals.containers as number;
 
   const selToken = TOKEN_OPTIONS[tIdx];
-  const selVol = VOLUME_OPTIONS[vIdx];
+  const selSize = SIZE_OPTIONS[sIdx];
   const selCon = CONTAINER_OPTIONS[cIdx];
 
-  if (selVol && selCon) {
+  if (selSize && selCon) {
     configStore.save({
       tokenItemId: selToken?.itemId ?? null,
-      maxWarehouseVolume: selVol.value,
+      maxSizeX: selSize.sizeX,
+      maxSizeY: selSize.sizeY,
+      maxSizeZ: selSize.sizeZ,
       maxContainers: selCon.value,
     });
   }
@@ -66,6 +70,6 @@ export async function showConfigUI(player: Player, configStore: ModConfigStore):
     player.sendMessage(`§a信物已设置为 ${selToken.label}§a，手持该物品即可触发仓库交互`);
   }
   player.sendMessage(
-    `§7仓库最大体积: ${selVol?.label ?? "32×32×16"}，最大容器数: ${selCon?.label ?? "200"}`
+    `§7仓库最大尺寸: ${selSize?.label ?? "16×16×16"}，最大容器数: ${selCon?.label ?? "200"}`
   );
 }

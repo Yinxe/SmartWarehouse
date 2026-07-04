@@ -118,6 +118,23 @@ export class SorterEngine {
     this.runtime.delete(warehouseId);
   }
 
+  /**
+   * 重置指定仓库的运行时游标。
+   *
+   * 将 inputCursor（输入容器轮询游标）归零，并清空 inputSlotCursors（各输入容器的
+   * 槽位游标），确保仓库重新激活时从头开始处理，避免因游标越界或数据不一致导致跳过
+   * 某些容器。
+   *
+   * @param warehouseId - 仓库 ID
+   */
+  resetCursors(warehouseId: WarehouseId): void {
+    const model = this.runtime.getOrBuild(warehouseId);
+    if (model) {
+      model.inputCursor = 0;
+      model.inputSlotCursors.clear();
+    }
+  }
+
   // ─── 区块加载预检 ──────────────────────────────────────────────
 
   /**

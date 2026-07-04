@@ -53,12 +53,33 @@ export const TOKEN_OPTIONS: { label: string; itemId: string | null }[] = [
 
 // ─── 选项常量 ──────────────────────────────────────────────────
 
-/** 仓库最大体积选项列表（用于 UI 下拉框） */
-export const VOLUME_OPTIONS: { label: string; value: number }[] = [
-  { label: "16×16×16 (4,096 方块)", value: 16 * 16 * 16 },
-  { label: "24×24×16 (9,216 方块)", value: 24 * 24 * 16 },
-  { label: "32×32×16 (16,384 方块) 推荐", value: 32 * 32 * 16 },
-  { label: "48×48×16 (36,864 方块)", value: 48 * 48 * 16 },
+/** 单组尺寸选项（X/Y/Z 三轴最大值） */
+export interface SizeOption {
+  /** 下拉框显示标签 */
+  label: string;
+  /** X 轴最大边长 */
+  sizeX: number;
+  /** Y 轴最大边长 */
+  sizeY: number;
+  /** Z 轴最大边长 */
+  sizeZ: number;
+}
+
+/**
+ * 仓库最大尺寸选项列表（用于 UI 下拉框）。
+ * X/Z 对称，Y 有 8/16 两档，共 10 种组合。
+ */
+export const SIZE_OPTIONS: SizeOption[] = [
+  { label: "16×8×16", sizeX: 16, sizeY: 8, sizeZ: 16 },
+  { label: "24×8×24", sizeX: 24, sizeY: 8, sizeZ: 24 },
+  { label: "32×8×32 推荐", sizeX: 32, sizeY: 8, sizeZ: 32 },
+  { label: "48×8×48", sizeX: 48, sizeY: 8, sizeZ: 48 },
+  { label: "64×8×64", sizeX: 64, sizeY: 8, sizeZ: 64 },
+  { label: "16×16×16", sizeX: 16, sizeY: 16, sizeZ: 16 },
+  { label: "24×16×24", sizeX: 24, sizeY: 16, sizeZ: 24 },
+  { label: "32×16×32 推荐", sizeX: 32, sizeY: 16, sizeZ: 32 },
+  { label: "48×16×48", sizeX: 48, sizeY: 16, sizeZ: 48 },
+  { label: "64×16×64", sizeX: 64, sizeY: 16, sizeZ: 64 },
 ];
 
 /** 单仓库最大容器数选项列表（用于 UI 下拉框） */
@@ -75,8 +96,12 @@ export const CONTAINER_OPTIONS: { label: string; value: number }[] = [
 export interface ModConfig {
   /** 信物物品 ID，null 表示关闭 */
   tokenItemId: string | null;
-  /** 单个仓库最大体积上限 */
-  maxWarehouseVolume: number;
+  /** X 轴最大边长 */
+  maxSizeX: number;
+  /** Y 轴最大边长 */
+  maxSizeY: number;
+  /** Z 轴最大边长 */
+  maxSizeZ: number;
   /** 单个仓库最大容器数上限 */
   maxContainers: number;
 }
@@ -110,7 +135,9 @@ export class ModConfigStore {
         const parsed = JSON.parse(raw) as Partial<ModConfig>;
         this.cached = {
           tokenItemId: parsed.tokenItemId ?? DEFAULT_TOKEN,
-          maxWarehouseVolume: parsed.maxWarehouseVolume ?? 4096,
+          maxSizeX: parsed.maxSizeX ?? 16,
+          maxSizeY: parsed.maxSizeY ?? 16,
+          maxSizeZ: parsed.maxSizeZ ?? 16,
           maxContainers: parsed.maxContainers ?? 50,
         };
         return this.cached;
@@ -119,7 +146,7 @@ export class ModConfigStore {
       }
     }
 
-    this.cached = { tokenItemId: DEFAULT_TOKEN, maxWarehouseVolume: 4096, maxContainers: 50 };
+    this.cached = { tokenItemId: DEFAULT_TOKEN, maxSizeX: 16, maxSizeY: 16, maxSizeZ: 16, maxContainers: 50 };
     return this.cached;
   }
 
@@ -162,8 +189,11 @@ export class ModConfigStore {
     return heldTypeId === tokenId;
   }
 
-  /** 获取仓库最大扫描体积 */
-  getMaxVolume(): number { return this.load().maxWarehouseVolume; }
+  /** 获取仓库最大扫描体积（由三轴最大边长乘积计算） */
+  getMaxVolume(): number {
+    const c = this.load();
+    return c.maxSizeX * c.maxSizeY * c.maxSizeZ;
+  }
 
   /** 获取单仓库最大容器数 */
   getMaxContainers(): number { return this.load().maxContainers; }

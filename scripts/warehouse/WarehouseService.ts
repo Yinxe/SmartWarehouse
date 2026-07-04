@@ -28,8 +28,8 @@ import type { ModConfigStore } from "../storage/ModConfigStore";
  */
 const MIN_WAREHOUSE_SPACING = 4;
 
-/** 单仓库最大边长（各轴向均不超过此值）。 */
-const MAX_EDGE_LENGTH = 32;
+/** 默认单仓库最大边长（各轴向均不超过此值，仅在配置加载失败时使用）。 */
+const FALLBACK_EDGE_LENGTH = 32;
 
 /**
  * 仓库服务（WarehouseService）
@@ -399,17 +399,22 @@ export class WarehouseService {
   }
 
   /**
-   * 校验仓库各轴向边长是否超过上限。
+   * 校验仓库各轴向边长是否超过全局配置的上限。
+   *
+   * 使用 ModConfigStore 中配置的三轴最大边长（maxSizeX/Y/Z）逐轴校验。
    *
    * @param area 仓库区域
-   * @throws 如果任一轴向边长超过 MAX_EDGE_LENGTH
+   * @throws 如果任一轴向边长超过配置上限
    */
   private assertEdgeLength(area: WarehouseArea): void {
     const edgeX = area.max.x - area.min.x + 1;
     const edgeY = area.max.y - area.min.y + 1;
     const edgeZ = area.max.z - area.min.z + 1;
-    if (edgeX > MAX_EDGE_LENGTH || edgeY > MAX_EDGE_LENGTH || edgeZ > MAX_EDGE_LENGTH) {
-      throw new Error(`仓库边长过大：${edgeX}×${edgeY}×${edgeZ}，各轴向不能超过 ${MAX_EDGE_LENGTH}`);
+    const cfg = this.configStore.load();
+    if (edgeX > cfg.maxSizeX || edgeY > cfg.maxSizeY || edgeZ > cfg.maxSizeZ) {
+      throw new Error(
+        `仓库边长过大：${edgeX}×${edgeY}×${edgeZ}，各轴向不能超过 ${cfg.maxSizeX}×${cfg.maxSizeY}×${cfg.maxSizeZ}`
+      );
     }
   }
 
