@@ -107,7 +107,38 @@ export class SorterEngine {
     const inputContainerId = model.inputContainerIds[inputIndex];
     model.inputCursor = (model.inputCursor + 1) % model.inputContainerIds.length;
 
+    // ── 空闲→活跃过渡检测 ──
+    // 如果仓库处于空闲状态但输入容器有物品，通知玩家并标记活跃
+    if (model.idle) {
+      const inputStored = warehouse.containers[inputContainerId];
+      if (inputStored) {
+        const dim = this.getDimensionSafe(warehouse.dimensionId);
+        if (dim) {
+          const inputContainer = getContainerFromStored(dim, inputStored);
+          if (inputContainer && inputContainer.emptySlotsCount < inputContainer.size) {
+            model.idle = false;
+            this.sendInfoToNearby(warehouse, "§a仓库开始分拣物品");
+          }
+        }
+      }
+    }
+
     this.processInputContainer(warehouse, model, inputContainerId);
+
+    // ── 活跃→空闲过渡检测 ──
+    // 处理完毕后若当前输入容器已空，扫描所有输入容器判断是否全空
+    if (!model.idle) {
+      const theStored = warehouse.containers[inputContainerId];
+      if (theStored) {
+        const dim = this.getDimensionSafe(warehouse.dimensionId);
+        if (dim) {
+          const container = getContainerFromStored(dim, theStored);
+          if (container && container.emptySlotsCount === container.size) {
+            this.trySetIdle(warehouse, model);
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -378,8 +409,9 @@ export class SorterEngine {
       const before = remaining?.amount ?? 0;
       const result = this.tryContainers(remaining, ids, warehouse, model, dimension, typeId, journal, tag);
       if (result === undefined) return undefined;
-      if (before > 0 && result.amount < before && prevAmount > 0 && result.amount === prevAmount) {
-        // 前一级别全没消化，本级消化了 → 降级
+      // prevAmount 为前一级别处理后的剩余量。如果前一级别留下了物品（prevAmount > 0）
+      // 且本级消化了其中一部分（result.amount < prevAmount），说明发生了降级。
+      if (prevAmount > 0 && result.amount < prevAmount) {
         onDowngrade(tag);
       }
       prevAmount = result.amount;
@@ -416,14 +448,15 @@ export class SorterEngine {
     }
 
     // ── 优先级 5：杂项（兜底）──────────────────────────────────
+    const beforeMisc = remaining?.amount ?? 0;
     remaining = tryLevel(
       model.miscContainerIds,
       "misc",
       () => this.warnDowngrade(warehouse, typeId, "normal", "misc")
     );
 
-    // 全满 → 通知玩家手动处理
-    if (remaining && remaining.amount > 0 && remaining.amount === prevAmount) {
+    // 全满 → 通知玩家手动处理（仅当杂项容器也无法放入任何物品时才告警）
+    if (remaining && remaining.amount > 0 && remaining.amount >= beforeMisc) {
       this.warnAllFull(warehouse, typeId);
     }
 
@@ -656,7 +689,7 @@ export class SorterEngine {
     this.sendWarnToNearby(warehouse, `§c${typeId} 无法分类！所有容器已满，请手动整理杂项容器或扩容`);
   }
 
-  /** 向仓库附近玩家发送预警消息。 */
+  /** 向仓库附近玩家发送预警消息（红色前缀）。 */
   private sendWarnToNearby(warehouse: WarehouseData, message: string): void {
     try {
       for (const player of world.getPlayers()) {
@@ -666,6 +699,43 @@ export class SorterEngine {
         }
       }
     } catch { /* 忽略 */ }
+  }
+
+  /** 向仓库附近玩家发送信息消息（绿色前缀）。 */
+  private sendInfoToNearby(warehouse: WarehouseData, message: string): void {
+    try {
+      for (const player of world.getPlayers()) {
+        if (player.dimension.id !== warehouse.dimensionId) continue;
+        if (isNearAreaXZ({ x: player.location.x, z: player.location.z }, warehouse.area, 8)) {
+          try { player.sendMessage(`§a[仓库]§r ${message}`); } catch { /* 忽略 */ }
+        }
+      }
+    } catch { /* 忽略 */ }
+  }
+
+  /**
+   * 检查并标记仓库为空闲状态。
+   *
+   * 扫描所有输入容器，若全部为空则设置 idle = true 并通知附近玩家。
+   * 仅当模型当前非空闲时执行。
+   */
+  private trySetIdle(warehouse: WarehouseData, model: WarehouseRuntimeModel): void {
+    if (model.idle) return;
+    const dimension = this.getDimensionSafe(warehouse.dimensionId);
+    if (!dimension) return;
+
+    for (const cid of model.inputContainerIds) {
+      const stored = warehouse.containers[cid];
+      if (!stored) continue;
+      const container = getContainerFromStored(dimension, stored);
+      if (container && container.emptySlotsCount < container.size) {
+        return; // 仍有物品，不空闲
+      }
+    }
+
+    model.idle = true;
+    log.info(`仓库 ${warehouse.id} 分拣完成`);
+    this.sendInfoToNearby(warehouse, "§a仓库分拣完成");
   }
 
   // ─── itemTypeIndex 索引辅助方法 ────────────────────────────────
