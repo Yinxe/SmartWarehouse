@@ -206,8 +206,7 @@ export async function showContainerRoleMenu(
     `${capacityLine ? `§7${capacityLine}\n` : ""}` +
     `${messinessLine ? `§7${messinessLine}\n` : ""}` +
     `§7容器ID: §f${containerId}\n` +
-    `§7状态:   ${statusColor}${statusText}§r` +
-    (container.capacityWarningEnabled ? "" : " §8预警关") + "\n" +
+    `§7状态:   ${statusColor}${statusText}§r\n` +
     `§7角色:   §f${roleLabel}${isHopper ? " §8(漏斗)" : ""} — ${isHopper ? "漏斗自动采集物品流入分拣系统" : roleDesc}§r` +
     familyLine;
 
@@ -242,15 +241,13 @@ export async function showContainerRoleMenu(
     form.dropdown("role", "容器角色", roleOptions, { defaultValueIndex: currentRoleIndex >= 0 ? currentRoleIndex : 0 });
   }
 
-  form.toggle("capacityWarning", "§e容量预警", { defaultValue: container.capacityWarningEnabled })
-    .toggle("organize", "§e立即整理（按物品 ID 排序合并）");
+  form.toggle("organize", "§e立即整理（按物品 ID 排序合并）");
 
   const vals = await form.show(player);
   if (!vals) return;
 
   const newEnabled = vals.enabled as boolean;
   const newRole: ContainerRole = isHopper ? "input" : ROLE_ORDER[vals.role as number] ?? container.role;
-  const newCapacityWarning = vals.capacityWarning as boolean;
   const shouldOrganize = vals.organize as boolean;
 
   // ── 整理容器 ──
@@ -279,11 +276,10 @@ export async function showContainerRoleMenu(
 
   // ── 提交角色和状态变更 ──
   try {
-    service.setContainerRoleAndState(warehouse.id, containerId, newRole, newEnabled, newCapacityWarning);
+    service.setContainerRoleAndState(warehouse.id, containerId, newRole, newEnabled);
     player.sendMessage(
       `§a容器已更新：${newEnabled ? "启用" : "禁用"}，` +
-      `角色=${ROLE_LABELS[newRole]}，` +
-      `容量预警=${newCapacityWarning ? "开" : "关"}`
+      `角色=${ROLE_LABELS[newRole]}`
     );
 
     // 如果角色改为大宗，引导玩家手动放入物品来设定类型

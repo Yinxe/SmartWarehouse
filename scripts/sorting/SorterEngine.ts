@@ -647,7 +647,7 @@ export class SorterEngine {
     const nearCapacity: { id: string; pct: number }[] = [];
     for (const cid of candidates) {
       const stored = warehouse.containers[cid];
-      if (!stored || !stored.capacityWarningEnabled) continue;
+      if (!stored) continue;
       const stats = refreshContainerStats(warehouse, stored);
       if (stats && stats.isWarning) {
         const pct = stats.totalSlots > 0 ? Math.round((stats.usedSlots / stats.totalSlots) * 100) : 0;

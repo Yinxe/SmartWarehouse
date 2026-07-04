@@ -271,8 +271,7 @@ export class WarehouseService {
     id: WarehouseId,
     containerId: string,
     role: ContainerRole | null,
-    enabled: boolean | null,
-    capacityWarningEnabled?: boolean
+    enabled: boolean | null
   ): WarehouseData {
     const warehouse = this.requireWarehouse(id);
     const container = warehouse.containers[containerId];
@@ -285,7 +284,6 @@ export class WarehouseService {
           ...container,
           ...(role !== null && { role }),
           ...(enabled !== null && { enabled }),
-          ...(capacityWarningEnabled !== undefined && { capacityWarningEnabled }),
           updatedAt: Date.now(),
         },
       },
@@ -513,7 +511,6 @@ export class WarehouseService {
     const now = Date.now();
     let role = defaults.role;
     let enabled = defaults.enabled;
-    let capacityWarningEnabled = true;
     let discoveredAt = now;
     let result = containers;
 
@@ -525,7 +522,6 @@ export class WarehouseService {
       if (overlap) {
         role = ec.role;
         enabled = ec.enabled;
-        capacityWarningEnabled = ec.capacityWarningEnabled;
         discoveredAt = ec.discoveredAt;
         const { [eid]: _, ...rest } = result;
         result = rest;
@@ -543,7 +539,6 @@ export class WarehouseService {
         occupiedLocations: [...newOccupied].sort(compareLocationForPrimary),
         role,
         enabled,
-        capacityWarningEnabled,
         discoveredAt,
         updatedAt: now,
       },
@@ -588,7 +583,6 @@ export class WarehouseService {
           occupiedLocations: [...occupied].sort(compareLocationForPrimary),
           role: old.role,
           enabled: old.enabled,
-          capacityWarningEnabled: old.capacityWarningEnabled,
           discoveredAt: old.discoveredAt,
           updatedAt: Date.now(),
         },

@@ -132,16 +132,7 @@ export class WarehouseRepository {
     // 设置字段迁移：用默认值补齐老仓库缺失的字段（如 enabledFamilies、capacityWarning）
     const settings: WarehouseSettings = { ...DEFAULT_WAREHOUSE_SETTINGS, ...meta.settings };
 
-    // 容器字段迁移：用 spread 补齐旧容器缺失的 capacityWarningEnabled
-    const migratedContainers: Record<ContainerId, StoredContainer> = {};
-    for (const [key, c] of Object.entries(containers)) {
-      migratedContainers[key] =
-        c.capacityWarningEnabled === undefined
-          ? { ...c, capacityWarningEnabled: true }
-          : c;
-    }
-
-    return { ...meta, settings, containers: migratedContainers };
+    return { ...meta, settings, containers };
   }
 
   /**

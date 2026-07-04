@@ -195,8 +195,6 @@ export interface StoredContainer {
   role: ContainerRole;
   /** 容器是否启用（禁用容器不参与任何分拣操作，独立于角色） */
   enabled: boolean;
-  /** 独立容量预警开关（默认开，受仓库级总开关控制） */
-  capacityWarningEnabled: boolean;
   /** 容器首次被发现的游戏刻时间戳 */
   discoveredAt: number;
   /** 容器信息最后更新的游戏刻时间戳 */

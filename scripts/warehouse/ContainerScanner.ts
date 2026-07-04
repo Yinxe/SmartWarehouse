@@ -96,7 +96,6 @@ export class ContainerScanner {
             occupiedLocations: occupied.sort(compareLocationForPrimary),
             role: forcedRole,
             enabled: previous?.enabled ?? defaultEnabled,
-            capacityWarningEnabled: previous?.capacityWarningEnabled ?? true,
             discoveredAt: previous?.discoveredAt ?? now,
             updatedAt: now,
           };
