@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { computeRouteOrder } from "../../scripts/domain/sorting/SortingPolicy";
 
-describe("SortingPolicy golden behavior", () => {
-  it("keeps the current route priority order", () => {
+describe("排序策略黄金行为", () => {
+  it("保持当前的路由优先级顺序", () => {
     expect(
       computeRouteOrder({
         bulkNonEmptyMatching: true,
@@ -14,7 +14,7 @@ describe("SortingPolicy golden behavior", () => {
     ).toEqual(["bulk", "normal", "family", "autocreate", "misc"]);
   });
 
-  it("routes auto-created categories before misc fallback", () => {
+  it("自动分类在杂项兜底之前路由", () => {
     expect(
       computeRouteOrder({
         bulkNonEmptyMatching: false,
@@ -26,7 +26,7 @@ describe("SortingPolicy golden behavior", () => {
     ).toEqual(["autocreate", "misc"]);
   });
 
-  it("does not let empty bulk containers claim new item types", () => {
+  it("空大宗容器不认领新物品种类", () => {
     expect(
       computeRouteOrder({
         bulkNonEmptyMatching: false,

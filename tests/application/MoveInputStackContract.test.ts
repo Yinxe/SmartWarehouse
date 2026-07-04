@@ -2,11 +2,11 @@
 
 import { describe, expect, it } from "vitest";
 import { MockContainer, MockItemStack } from "../helpers/MockMinecraft";
-import { MoveJournal } from "../../scripts/sorting/MoveJournal";
-import { tryMoveStackIntoContainerWithJournal } from "../../scripts/sorting/ContainerInventory";
+import { MoveJournal } from "../../scripts/infrastructure/minecraft/container/MoveJournal";
+import { tryMoveStackIntoContainerWithJournal } from "../../scripts/infrastructure/minecraft/container/ContainerAccess";
 
-describe("Move input stack transaction contract", () => {
-  it("can roll back target container writes recorded by MoveJournal", () => {
+describe("输入堆栈事务契约", () => {
+  it("可回滚MoveJournal记录的目标容器写入", () => {
     const target = new MockContainer(2, [new MockItemStack("minecraft:stone", 60), undefined]);
     const journal = new MoveJournal();
 
@@ -28,7 +28,7 @@ describe("Move input stack transaction contract", () => {
     expect(target.dump()).toEqual([{ typeId: "minecraft:stone", amount: 60 }, undefined]);
   });
 
-  it("models input slot commit failure for the rewrite contract", () => {
+  it("模拟输入槽提交失败", () => {
     const input = new MockContainer(1, [new MockItemStack("minecraft:diamond", 3)]);
     input.failSetSlots.add(0);
 

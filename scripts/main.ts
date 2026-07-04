@@ -1,14 +1,14 @@
 import { system } from "@minecraft/server";
 import { CommandRouter } from "./commands/CommandRouter";
 import { registerToolInteraction } from "./interaction/ToolInteractionController";
-import { WarehouseRuntimeRegistry } from "./runtime/WarehouseRuntimeRegistry";
-import { SlotOrganizer } from "./sorting/SlotOrganizer";
-import { SorterEngine } from "./sorting/SorterEngine";
-import { SortingScheduler } from "./sorting/SortingScheduler";
-import { WarehouseRepository } from "./storage/WarehouseRepository";
-import { ModConfigStore } from "./storage/ModConfigStore";
-import { WarehouseService } from "./warehouse/WarehouseService";
-import { BoundaryDisplay } from "./warehouse/BoundaryDisplay";
+import { WarehouseRuntimeRegistry } from "./infrastructure/cache/WarehouseRuntimeRegistry";
+import { SlotOrganizer } from "./infrastructure/minecraft/container/SlotOrganizer";
+import { SorterEngine } from "./infrastructure/minecraft/SorterEngine";
+import { SortingScheduler } from "./infrastructure/minecraft/scheduling/SortingScheduler";
+import { WarehouseRepository } from "./infrastructure/persistence/WarehouseRepository";
+import { ModConfigStore } from "./infrastructure/persistence/ModConfigStore";
+import { WarehouseService } from "./infrastructure/minecraft/WarehouseService";
+import { BoundaryDisplay } from "./infrastructure/minecraft/BoundaryDisplay";
 
 // ── 系统初始化（在脚本启动时执行一次）───────────────────
 
@@ -19,7 +19,7 @@ const configStore = new ModConfigStore();
 const repository = new WarehouseRepository();
 
 // 运行时缓存层：在内存中维护仓库索引，提供高性能查询
-const runtime = new WarehouseRuntimeRegistry(repository);
+const runtime = new WarehouseRuntimeRegistry((id) => repository.load(id));
 
 // 容器整理器：负责混乱度评分和自动整理
 const organizer = new SlotOrganizer();

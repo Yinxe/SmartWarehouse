@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { WarehouseId, ContainerId, DimensionId, BlockLocation } from "../../scripts/domain/shared/identifiers";
 
-describe("Domain shared types", () => {
-  it("can be used without any Minecraft runtime dependency", () => {
+describe("领域共享类型", () => {
+  it("可在无Minecraft运行时依赖下使用", () => {
     const wid: WarehouseId = "main";
     const cid: ContainerId = "overworld|0|64|0";
     const did: DimensionId = "minecraft:overworld";

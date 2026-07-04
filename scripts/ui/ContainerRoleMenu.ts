@@ -1,11 +1,11 @@
 import { world, type Player } from "@minecraft/server";
 import type { ContainerId, ContainerRole, StoredContainer, WarehouseData } from "../types";
 import { ROLE_DESCRIPTIONS, ROLE_LABELS, ROLE_ORDER } from "../types";
-import { canManageWarehouse } from "../util/PlayerAuth";
-import { SlotOrganizer } from "../sorting/SlotOrganizer";
-import { formatOrganizeResult } from "../util/OrganizeFormatter";
-import type { WarehouseService } from "../warehouse/WarehouseService";
-import { getFamilyPurity, getContainerFromStored } from "../sorting/ContainerInventory";
+import { canManageWarehouse } from "../infrastructure/PlayerAuth";
+import { SlotOrganizer } from "../infrastructure/minecraft/container/SlotOrganizer";
+import { formatOrganizeResult } from "../domain/shared/OrganizeFormatter";
+import type { WarehouseService } from "../infrastructure/minecraft/WarehouseService";
+import { getFamilyPurity, getContainerFromStored } from "../infrastructure/minecraft/container/ContainerAccess";
 import { getFamilyById } from "../data/ItemFamilies";
 import { formatContainerCapacityLine, setContainerStats, CAPACITY_WARNING_THRESHOLD } from "./WarehouseStats";
 import type { ContainerStats } from "../types";

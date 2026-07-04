@@ -1,8 +1,8 @@
 import { world, type Container } from "@minecraft/server";
 import type { BlockLocation, ContainerId, ContainerRole, ContainerStats, StoredContainer, WarehouseData, WarehouseId } from "../types";
 import { ROLE_LABELS } from "../types";
-import { getContainerFromStored } from "../sorting/ContainerInventory";
-import { WarehouseStatsStore } from "../storage/WarehouseStatsStore";
+import { getContainerFromStored } from "../infrastructure/minecraft/container/ContainerAccess";
+import { WarehouseStatsStore } from "../infrastructure/persistence/WarehouseStatsStore";
 import { Table, Cell } from "./Table";
 
 // ─── 持久化层 ──────────────────────────────────────────────────
@@ -24,8 +24,10 @@ const statsStore = new WarehouseStatsStore();
 
 // ─── 常量 ───────────────────────────────────────────────────────
 
-/** 容量预警阈值：已用槽位占比超过此值视为"容量告急" */
-export const CAPACITY_WARNING_THRESHOLD = 0.9;
+import { CAPACITY_WARNING_THRESHOLD } from "../domain/sorting/CapacityWarning";
+
+// 为兼容旧导入路径重新导出
+export { CAPACITY_WARNING_THRESHOLD };
 
 // ─── 运行时缓存 ──────────────────────────────────────────────────
 
@@ -65,7 +67,7 @@ export function invalidateWarehouseStats(warehouseId: WarehouseId, containerIds?
  * 获取单个容器的缓存统计。
  * 优先读内存缓存，未命中则尝试从 DP 加载，都无则计算并持久化。
  */
-function getOrComputeContainerStats(
+export function getOrComputeContainerStats(
   warehouse: WarehouseData,
   stored: StoredContainer
 ): ContainerStats | undefined {

@@ -8,8 +8,8 @@ function safe<T>(fn: () => T): T | undefined {
   }
 }
 
-describe("Port contract helpers", () => {
-  it("normalizes thrown Minecraft API failures", () => {
+describe("端口契约辅助函数", () => {
+  it("规范化Minecraft API异常", () => {
     const result = safe(() => {
       throw new Error("unloaded chunk");
     });
@@ -17,7 +17,7 @@ describe("Port contract helpers", () => {
     expect(result).toBeUndefined();
   });
 
-  it("normalizes disconnected-player notification failures", () => {
+  it("规范化断线玩家通知失败", () => {
     const messageResult = safe(() => {
       throw new Error("player disconnected");
     });

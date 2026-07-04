@@ -1,5 +1,5 @@
 import type { Container } from "@minecraft/server";
-import { snapshotContainer, restoreContainerSnapshot } from "../../scripts/sorting/ContainerSnapshot";
+import { snapshotContainer, restoreContainerSnapshot } from "../../scripts/infrastructure/minecraft/container/ContainerSnapshot";
 import { MockContainer, MockItemStack } from "../helpers/MockMinecraft";
 import { assert } from "../helpers/Assert";
 

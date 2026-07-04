@@ -34,17 +34,17 @@ import {
 import type { Vector3, EntityInventoryComponent } from "@minecraft/server";
 import type { ContainerId, WarehouseId } from "../types";
 import { ROLE_LABELS, ROLE_ORDER } from "../types";
-import { SlotOrganizer } from "../sorting/SlotOrganizer";
-import { formatOrganizeResult } from "../util/OrganizeFormatter";
-import { normalizeWarehouseId } from "../storage/WarehouseRepository";
-import type { WarehouseRepository } from "../storage/WarehouseRepository";
-import type { ModConfigStore } from "../storage/ModConfigStore";
-import { canManageWarehouse } from "../util/PlayerAuth";
-import { Logger } from "../util/Logger";
-import type { WarehouseService } from "../warehouse/WarehouseService";
+import { SlotOrganizer } from "../infrastructure/minecraft/container/SlotOrganizer";
+import { formatOrganizeResult } from "../domain/shared/OrganizeFormatter";
+import { normalizeWarehouseId } from "../infrastructure/persistence/WarehouseRepository";
+import type { WarehouseRepository } from "../infrastructure/persistence/WarehouseRepository";
+import type { ModConfigStore } from "../infrastructure/persistence/ModConfigStore";
+import { canManageWarehouse } from "../infrastructure/PlayerAuth";
+import { Logger } from "../infrastructure/Logger";
+import type { WarehouseService } from "../infrastructure/minecraft/WarehouseService";
 import { showMainMenu } from "../ui/MainMenu";
-import { SearchService, formatSearchResult } from "../warehouse/SearchService";
-import { isNearAreaXZ } from "../util/Vector";
+import { SearchService, formatSearchResult } from "../infrastructure/minecraft/SearchService";
+import { isNearAreaXZ } from "../domain/shared/Vector";
 
 /** CommandRouter 专用的日志记录器实例，用于输出调试和运行信息 */
 const log = new Logger("CommandRouter");

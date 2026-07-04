@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { FakeDynamicPropertyStore } from "../helpers/FakeDynamicPropertyStore";
-import { WarehouseRepository } from "../../scripts/storage/WarehouseRepository";
+import { WarehouseRepository } from "../../scripts/infrastructure/persistence/WarehouseRepository";
 
 function key(id: string, generation: number, shard: number): string {
   return `sw:warehouse:${id}:${generation}:containers:${shard}`;
 }
 
-describe("WarehouseRepository legacy compatibility", () => {
-  it("loads version 1 shards and defaults missing settings", () => {
+describe("仓库仓储兼容性", () => {
+  it("加载v1分片并补齐缺失设置在默认值", () => {
     const store = new FakeDynamicPropertyStore();
     store.setJson("sw:index", { version: 1, warehouses: ["legacy"] });
     store.setJson("sw:warehouse:legacy:meta", {

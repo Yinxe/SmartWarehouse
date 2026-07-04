@@ -3,8 +3,8 @@ import type { ContainerAccessPort } from "../../scripts/application/ports/Contai
 import type { WorldAccessPort } from "../../scripts/application/ports/WorldAccessPort";
 import type { WarehouseRepositoryPort } from "../../scripts/application/ports/WarehouseRepositoryPort";
 
-describe("Port interfaces", () => {
-  it("all port interfaces are importable without MC runtime", () => {
+describe("端口接口", () => {
+  it("所有端口接口可导入而不依赖MC运行时", () => {
     // 只验证类型可编译，不创建实例
     expect(true).toBe(true);
   });

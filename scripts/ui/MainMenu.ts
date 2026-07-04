@@ -5,11 +5,11 @@ import { showWarehouseManageMenu } from "./WarehouseManageMenu";
 import { showSearchUI } from "./SearchUI";
 import { showConfigUI } from "./ConfigUI";
 import { showWarehouseSettingsMenu } from "./WarehouseSettingsMenu";
-import type { WarehouseRepository } from "../storage/WarehouseRepository";
-import type { WarehouseService } from "../warehouse/WarehouseService";
-import type { ModConfigStore } from "../storage/ModConfigStore";
-import { canManageWarehouse } from "../util/PlayerAuth";
-import { isNearAreaXZ } from "../util/Vector";
+import type { WarehouseRepository } from "../infrastructure/persistence/WarehouseRepository";
+import type { WarehouseService } from "../infrastructure/minecraft/WarehouseService";
+import type { ModConfigStore } from "../infrastructure/persistence/ModConfigStore";
+import { canManageWarehouse } from "../infrastructure/PlayerAuth";
+import { isNearAreaXZ } from "../domain/shared/Vector";
 
 /** 附近仓库检测范围（格） */
 const NEARBY_MARGIN = 8;

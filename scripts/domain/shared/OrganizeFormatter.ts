@@ -4,7 +4,7 @@
  * 纯文本格式化逻辑，不依赖 Minecraft 运行时 API。
  */
 
-import type { OrganizeResult } from "../../sorting/SlotOrganizer";
+import type { OrganizeResult } from "./OrganizeTypes";
 
 /**
  * 将整理结果格式化为玩家可读的消息行列表。

@@ -60,8 +60,8 @@ function baseWarehouse(): WarehouseData {
   };
 }
 
-describe("Warehouse runtime model golden behavior", () => {
-  it("indexes enabled, disabled, and double chest occupied locations like the current code", () => {
+describe("仓库运行时模型黄金行为", () => {
+  it("索引已启用/已禁用/双箱占位", () => {
     const warehouse = baseWarehouse();
     const model = buildWarehouseRuntimeModel(warehouse);
 
@@ -71,7 +71,7 @@ describe("Warehouse runtime model golden behavior", () => {
     expect(model.occupiedLocationIndex.size).toBe(4);
   });
 
-  it("copies occupiedLocations instead of sharing persistent arrays", () => {
+  it("复制occupiedLocations而非共享持久化数组", () => {
     const warehouse = baseWarehouse();
     const model = buildWarehouseRuntimeModel(warehouse);
     const storedBefore = warehouse.containers.normalDouble.occupiedLocations.length;

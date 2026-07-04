@@ -1,16 +1,16 @@
 import { world, system, type Player } from "@minecraft/server";
 import type { BlockLocation } from "../types";
 import { toBlockLocation } from "../types";
-import { Logger } from "../util/Logger";
-import { isSupportedContainerType } from "../warehouse/ContainerTypes";
-import type { WarehouseRepository } from "../storage/WarehouseRepository";
-import type { WarehouseService } from "../warehouse/WarehouseService";
-import type { ModConfigStore } from "../storage/ModConfigStore";
+import { Logger } from "../infrastructure/Logger";
+import { isSupportedContainerType } from "../domain/warehouse/ContainerTypes";
+import type { WarehouseRepository } from "../infrastructure/persistence/WarehouseRepository";
+import type { WarehouseService } from "../infrastructure/minecraft/WarehouseService";
+import type { ModConfigStore } from "../infrastructure/persistence/ModConfigStore";
 import { getSession, setSession, clearSession, clearSessionById } from "./SelectionSessionStore";
 import { showMainMenu } from "../ui/MainMenu";
 import { showContainerRoleMenu } from "../ui/ContainerRoleMenu";
-import { SlotOrganizer } from "../sorting/SlotOrganizer";
-import { formatOrganizeResult } from "../util/OrganizeFormatter";
+import { SlotOrganizer } from "../infrastructure/minecraft/container/SlotOrganizer";
+import { formatOrganizeResult } from "../domain/shared/OrganizeFormatter";
 
 /**
  * 防抖时间窗口（毫秒）。
