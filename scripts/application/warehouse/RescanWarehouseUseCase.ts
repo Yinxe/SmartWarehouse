@@ -47,7 +47,7 @@ export class RescanWarehouseUseCase {
     const changed: string[] = [];
 
     // 保存更新后的仓库
-    const updated = { ...warehouse, containers: scanned as any };
+    const updated = { ...warehouse, containers: scanned as Record<string, any> };
     this.repository.save(updated as any);
     this.runtimeRegistry.markDirty(warehouseId);
 

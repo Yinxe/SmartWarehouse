@@ -4,7 +4,7 @@
  * 部分更新仓库的设置字段。
  */
 
-import type { WarehouseRepositoryPort } from "../ports/WarehouseRepositoryPort";
+import type { WarehouseRepositoryPort, WarehouseMetaDto } from "../ports/WarehouseRepositoryPort";
 import type { RuntimeRegistryPort } from "../ports/RuntimeRegistryPort";
 import type { SchedulerPort } from "../ports/SchedulerPort";
 
@@ -38,9 +38,11 @@ export class UpdateSettingsUseCase {
       settings: { ...warehouse.settings, ...settings },
     };
 
-    this.repository.saveMetaOnly(updated as any);
+    this.repository.saveMetaOnly(updated as WarehouseMetaDto);
     this.runtimeRegistry.markDirty(warehouseId);
-    this.scheduler.refresh(warehouseId, (updated.settings as any).processingSpeed ?? 8);
+    const speed = typeof updated.settings.processingSpeed === "number"
+      ? updated.settings.processingSpeed : 8;
+    this.scheduler.refresh(warehouseId, speed);
 
     return { ok: true };
   }
