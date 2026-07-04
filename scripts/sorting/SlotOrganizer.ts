@@ -56,9 +56,9 @@ export interface ContainerAnalysis {
 export interface MessinessScore {
   /** 总分 0-1，越高越乱 */
   total: number;
-  /** 顺序评分 0-1（权重 70%） */
+  /** 顺序评分 0-1（权重 50%） */
   order: number;
-  /** 堆叠评分 0-1（权重 30%） */
+  /** 堆叠评分 0-1（权重 50%） */
   stack: number;
   /** 总有效槽位数（排序用的分母） */
   effectiveSlots: number;
@@ -192,16 +192,15 @@ export class SlotOrganizer {
    *
    * **评分模型**（总分 0-1，越高越乱）：
    *
-   * 顺序权重 70%：比较实际排列与理想排序（typeId 升序）的差异。
+   * 顺序权重 50%：比较实际排列与理想排序（typeId 升序）的差异。
    *   - 有效范围 = 最后一个非空槽位索引 + 1
-   *   - 逐个位置对比实际物品与理想物品，统计乱序槽位数
-   *   - 范围内空格也增加乱序
-   *   - 得分 = disorderSlots / effectiveSlots × 0.7
+   *   - 逐个位置对比实际物品与理想物品，统计逆序对数
+   *   - 得分 = inversions / maxInversions × 0.5
    *
-   * 堆叠权重 30%：检测未充分堆叠的同种物品。
+   * 堆叠权重 50%：检测未充分堆叠的同种物品。
    *   - 某种物品有 2 组及以上未满堆叠 → 记入未优化
    *   - 只有 1 组未满堆叠不记（正常使用状态）
-   *   - 得分 = suboptimalStacks / nonEmptySlots × 0.3
+   *   - 得分 = suboptimalStacks / nonEmptySlots × 0.5
    */
   calculateMessiness(container: Container, options?: Partial<OrganizeOptions>): MessinessScore {
     const opts: OrganizeOptions = { ...DEFAULT_OPTIONS, ...options };
@@ -234,18 +233,18 @@ export class SlotOrganizer {
       return { total: 0, order: 0, stack: 0, effectiveSlots, disorderSlots: 0, nonEmptySlots, suboptimalStacks: 0 };
     }
 
-    // ── 顺序评分（70%）—— 相邻逆序对 ──
+    // ── 顺序评分（50%）—— 相邻逆序对 ──
     // 只统计非空物品间的相邻逆序对，一个错位只影响相邻关系，不会级联拉满
-    // 例：[A,C,B,D] → 仅 C>B 一对逆序 → 1/3 × 0.7 = 0.23
+    // 例：[A,C,B,D] → 仅 C>B 一对逆序 → 1/3 × 0.5 = 0.17
     const typeSeq = items.map((i) => i.typeId);
     let inversions = 0;
     for (let i = 0; i < typeSeq.length - 1; i++) {
       if (typeSeq[i].localeCompare(typeSeq[i + 1]) > 0) inversions++;
     }
     const maxInversions = Math.max(1, typeSeq.length - 1);
-    const order = (inversions / maxInversions) * 0.7;
+    const order = (inversions / maxInversions) * 0.5;
 
-    // ── 堆叠评分（30%） ──
+    // ── 堆叠评分（50%） ──
     // 按 typeId 分组统计堆叠情况
     const typeGroups = new Map<string, { stacks: number; nonFull: number }>();
     for (const item of items) {
@@ -264,7 +263,7 @@ export class SlotOrganizer {
       if (g.nonFull >= 2) suboptimalStacks += g.nonFull;
     }
 
-    const stack = nonEmptySlots > 0 ? (suboptimalStacks / nonEmptySlots) * 0.3 : 0;
+    const stack = nonEmptySlots > 0 ? (suboptimalStacks / nonEmptySlots) * 0.5 : 0;
     const total = Math.min(1, order + stack);
 
     return { total, order, stack, effectiveSlots, disorderSlots: inversions, nonEmptySlots, suboptimalStacks };
