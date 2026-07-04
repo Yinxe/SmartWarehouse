@@ -9,7 +9,7 @@
  */
 
 import type { ContainerId, WarehouseId, WarehouseData, StoredContainer } from "../../types";
-import { makeOccupiedLocationKey } from "../../warehouse/ContainerId";
+import { makeOccupiedLocationKey } from "./ContainerId";
 
 /**
  * 运行时容器信息，在 StoredContainer 基础上增加了运行时状态字段。
