@@ -1,6 +1,7 @@
 import type {
   ContainerId,
   StoredContainer,
+  WarehouseArea,
   WarehouseContainerShard,
   WarehouseData,
   WarehouseId,
@@ -296,6 +297,22 @@ export class WarehouseRepository {
     }
     const index = this.getIndex();
     this.saveIndex({ version: 1, warehouses: index.warehouses.filter((warehouseId) => warehouseId !== id) });
+  }
+
+  /** 加载索引中所有已注册仓库的元数据（不含容器数据），自动过滤不存在的。 */
+  loadAllMeta(): Array<{ id: WarehouseId; dimensionId: string; area: WarehouseArea; settings: WarehouseSettings }> {
+    return this.getIndex()
+      .warehouses.map((id) => {
+        const meta = this.store.getJson<WarehouseMeta | undefined>(metaKey(id), undefined);
+        if (!meta) return undefined;
+        return {
+          id,
+          dimensionId: meta.dimensionId,
+          area: meta.area,
+          settings: { ...DEFAULT_WAREHOUSE_SETTINGS, ...meta.settings },
+        };
+      })
+      .filter((w): w is NonNullable<typeof w> => Boolean(w));
   }
 
   /** 加载索引中所有注册的仓库数据，自动过滤掉已损坏或不存在的仓库 */
