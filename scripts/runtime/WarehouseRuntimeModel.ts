@@ -50,6 +50,8 @@ export function buildWarehouseRuntimeModel(warehouse: WarehouseData): WarehouseR
     areaLoadedCheckedTick: 0,
     /** 区块加载状态缓存（undefined = 尚未检查） */
     areaLoaded: undefined,
+    /** 空闲状态（所有输入容器空时置 true，跳过调度） */
+    idle: false,
   };
 
   for (const container of Object.values(warehouse.containers)) {
