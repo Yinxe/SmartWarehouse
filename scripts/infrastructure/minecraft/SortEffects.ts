@@ -1,8 +1,14 @@
-import { Dimension, MolangVariableMap } from "@minecraft/server";
+import { Dimension, MolangVariableMap, system } from "@minecraft/server";
 import type { BlockLocation, ContainerRole } from "../../types";
 import { Logger } from "../Logger";
 
 const log = new Logger("SortEffects");
+
+/**
+ * 效果节流：记录上一个播放效果的 tick。
+ * 同一 tick 内多次调用只播第一次，避免分拣多个物品时粒子/音效重叠。
+ */
+let lastEffectTick = -1;
 
 /**
  * 智能仓库分拣动画效果工具。
@@ -110,6 +116,8 @@ function playEffect(
  * 播放分拣成功效果。
  * 颜色由容器角色决定。大箱子的每个半块各播一次。
  *
+ * 节流：同一 tick 内多次调用只播放第一次，避免多个物品分拣时粒子重叠。
+ *
  * @param dimension  容器所在维度
  * @param occupiedLocations  容器占用的所有方块位置
  * @param role  容器角色
@@ -119,6 +127,10 @@ export function playSortEffect(
   occupiedLocations: BlockLocation[],
   role: ContainerRole
 ): void {
+  // 节流：每 tick 最多播一次
+  const currentTick = system.currentTick;
+  if (currentTick === lastEffectTick) return;
+  lastEffectTick = currentTick;
   try {
     for (const loc of occupiedLocations) {
       playEffect(dimension, loc, role, "smartwarehouse:sort", "random.orb", 0.65, 0.35);
