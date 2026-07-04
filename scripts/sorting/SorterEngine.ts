@@ -1,25 +1,23 @@
-import { world, system, Dimension, ItemStack, Container } from "@minecraft/server";
-import type { WarehouseData, WarehouseId, WarehouseRuntimeModel, WarehouseArea, ContainerId } from "../types";
-import { WarehouseRepository } from "../storage/WarehouseRepository";
+import { Container, Dimension, ItemStack, system, world } from "@minecraft/server";
+import { getFamily, getFamilyById } from "../data/ItemFamilies";
 import { WarehouseRuntimeRegistry } from "../runtime/WarehouseRuntimeRegistry";
+import { WarehouseRepository } from "../storage/WarehouseRepository";
+import type { ContainerId, WarehouseData, WarehouseId, WarehouseRuntimeModel } from "../types";
+import { refreshContainerStats } from "../ui/WarehouseStats";
 import { Logger } from "../util/Logger";
+import { isNearAreaXZ } from "../util/Vector";
 import {
-  getContainerFromStored,
-  containerHasType,
-  isContainerEmpty,
-  tryMoveStackIntoContainer,
-  tryMoveStackIntoContainerWithJournal,
-  isShulkerBoxItem,
-  getBulkChestFirstType,
-  tryFillShulkerBoxes,
-  getFamilyPurity,
+    containerHasType,
+    getBulkChestFirstType,
+    getContainerFromStored,
+    getFamilyPurity,
+    isContainerEmpty,
+    tryMoveStackIntoContainer,
+    tryMoveStackIntoContainerWithJournal
 } from "./ContainerInventory";
 import { MoveJournal } from "./MoveJournal";
-import { playSortEffect } from "./SortEffects";
 import { SlotOrganizer } from "./SlotOrganizer";
-import { getFamily, getFamilyById } from "../data/ItemFamilies";
-import { refreshContainerStats } from "../ui/WarehouseStats";
-import { isNearAreaXZ } from "../util/Vector";
+import { playSortEffect } from "./SortEffects";
 
 const log = new Logger("SorterEngine");
 
@@ -395,8 +393,8 @@ export class SorterEngine {
       return getBulkChestFirstType(target) === typeId;
     });
     remaining = this.tryBulkContainers(remaining, bulkMatches, warehouse, model, dimension, typeId, journal);
-    if (remaining === undefined) return undefined;
     this.checkGroupCapacity(warehouse, bulkMatches, typeId, "大宗");
+    if (remaining === undefined) return undefined;
 
     /** 前一级别剩余量，用于检测降级 */
     let prevAmount = remaining.amount;
@@ -404,8 +402,8 @@ export class SorterEngine {
     // ── 优先级 2：多物品（普通）────────────────────────────────
     const normalCandidates = this.findExistingTypeContainers(warehouse, model, typeId, dimension);
     remaining = this.tryContainers(remaining, normalCandidates, warehouse, model, dimension, typeId, journal, "match");
-    if (remaining === undefined) return undefined;
     this.checkGroupCapacity(warehouse, normalCandidates, typeId, "普通");
+    if (remaining === undefined) return undefined;
     // 降级检测：前级未消化但本级消化了 → 降级发生
     if (prevAmount > 0 && remaining.amount < prevAmount) {
       this.warnStorageFull(warehouse, typeId, "大宗", "普通");
@@ -418,8 +416,8 @@ export class SorterEngine {
     if (family && enabledFamilies.includes(family.id)) {
       const familyCandidates = this.findExistingFamilyContainers(warehouse, model, family.id, dimension);
       remaining = this.tryContainers(remaining, familyCandidates, warehouse, model, dimension, typeId, journal, "family");
-      if (remaining === undefined) return undefined;
       this.checkGroupCapacity(warehouse, familyCandidates, typeId, "同族");
+      if (remaining === undefined) return undefined;
       // 同族与普通同级，不触发降级告警
       prevAmount = remaining.amount;
     }
@@ -429,16 +427,16 @@ export class SorterEngine {
       const freeNormal = this.findEmptyNormalContainer(warehouse, model, dimension);
       if (freeNormal) {
         remaining = this.tryContainers(remaining, [freeNormal], warehouse, model, dimension, typeId, journal, "autocreate");
-        if (remaining === undefined) return undefined;
         this.checkGroupCapacity(warehouse, [freeNormal], typeId, "自动分类");
+        if (remaining === undefined) return undefined;
         prevAmount = remaining.amount;
       }
     }
 
     // ── 优先级 5：杂项（兜底）──────────────────────────────────
     remaining = this.tryContainers(remaining, model.miscContainerIds, warehouse, model, dimension, typeId, journal, "misc");
-    if (remaining === undefined) return undefined;
     this.checkGroupCapacity(warehouse, model.miscContainerIds, typeId, "杂项");
+    if (remaining === undefined) return undefined;
     // 降级检测：前级未消化但杂项消化了
     if (prevAmount > 0 && remaining.amount < prevAmount) {
       this.warnStorageFull(warehouse, typeId, "普通", "杂项");
@@ -525,8 +523,7 @@ export class SorterEngine {
         playSortEffect(dimension, stored.occupiedLocations, stored.role);
         // 触发目标容器的混乱度检查，必要时自动整理
         this.organizer?.onDeposit(targetContainer, containerId, warehouse.settings.autoSortThreshold / 100);
-        // 重算并持久化该容器的存储统计
-        refreshContainerStats(warehouse, stored);
+        // 存储统计由 checkGroupCapacity 在每级结束后统一刷新
       }
       // 注：同类型容器间溢出（同一级别内）属正常扩容行为，不告警
       // 容器组级容量预警在 moveStackIntoWarehouse 的 checkGroupCapacity 中处理
@@ -591,13 +588,13 @@ export class SorterEngine {
       // 在写入前记录目标容器快照
       journal.snapshotTarget(containerId, target);
 
-      // 第 1 步：优先填入箱内已有的潜影盒
-      remaining = tryFillShulkerBoxes(target, remaining);
-      if (remaining === undefined) {
-        playSortEffect(dimension, stored.occupiedLocations, stored.role);
-        this.organizer?.onDeposit(target, containerId, warehouse.settings.autoSortThreshold / 100);
-        return undefined;
-      }
+      // 第 1 步：优先填入箱内已有的潜影盒 (系统API不支持,或许未来支持)
+      // remaining = tryFillShulkerBoxes(target, remaining);
+      // if (remaining === undefined) {
+      //   playSortEffect(dimension, stored.occupiedLocations, stored.role);
+      //   this.organizer?.onDeposit(target, containerId, warehouse.settings.autoSortThreshold / 100);
+      //   return undefined;
+      // }
 
       // 第 2 步：剩余物品填入空槽位（散装）
       remaining = tryMoveStackIntoContainer(remaining, target);
@@ -607,8 +604,7 @@ export class SorterEngine {
         log.info(`[bulk] ${typeId} x${placed} → ${containerId} @ (${loc.x},${loc.y},${loc.z})`);
         playSortEffect(dimension, stored.occupiedLocations, stored.role);
         this.organizer?.onDeposit(target, containerId, warehouse.settings.autoSortThreshold / 100);
-        // 重算并持久化该容器的存储统计
-        refreshContainerStats(warehouse, stored);
+        // 存储统计由 checkGroupCapacity 在每级结束后统一刷新
       }
 
       if (remaining === undefined) return undefined;
@@ -663,7 +659,7 @@ export class SorterEngine {
     if (system.currentTick - last < CAPACITY_WARNING_COOLDOWN_TICKS) return;
     this.warningCooldowns.set(key, system.currentTick);
 
-    const containerList = nearCapacity.map((c, i) => `#${i + 1}.${c.id}(${c.pct}%)`).join(" ");
+    const containerList = nearCapacity.map((c, i) => `#${i + 1}-${c.id}(${c.pct}%)`).join(" ");
     this.sendWarnToNearby(
       warehouse,
       `§e仓库 ${warehouse.displayName} 类型:${levelLabel} 物品:${typeId} 容器: ${containerList} 总容量已达阈值`
