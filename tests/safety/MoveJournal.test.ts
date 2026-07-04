@@ -1,10 +1,7 @@
 import type { Container } from "@minecraft/server";
 import { MoveJournal } from "../../scripts/sorting/MoveJournal";
-import { MockContainer, MockItemStack } from "./MockContainer";
-
-function assert(condition: boolean, message: string): void {
-  if (!condition) throw new Error(message);
-}
+import { MockContainer, MockItemStack } from "../helpers/MockMinecraft";
+import { assert } from "../helpers/Assert";
 
 /** 将 MockContainer 类型安全地转换为 @minecraft/server.Container */
 function asContainer(container: MockContainer): Container {
