@@ -1,29 +1,10 @@
 import { describe, expect, it } from "vitest";
-
-type RouteLevel = "bulk" | "normal" | "family" | "autocreate" | "misc";
-
-interface CandidateState {
-  bulkNonEmptyMatching: boolean;
-  normalHasType: boolean;
-  familyEnabledAndMatching: boolean;
-  autoCreateEnabledAndEmptyNormal: boolean;
-  miscAvailable: boolean;
-}
-
-function currentRouteOrder(state: CandidateState): RouteLevel[] {
-  const order: RouteLevel[] = [];
-  if (state.bulkNonEmptyMatching) order.push("bulk");
-  if (state.normalHasType) order.push("normal");
-  if (state.familyEnabledAndMatching) order.push("family");
-  if (state.autoCreateEnabledAndEmptyNormal) order.push("autocreate");
-  if (state.miscAvailable) order.push("misc");
-  return order;
-}
+import { computeRouteOrder } from "../../scripts/domain/sorting/SortingPolicy";
 
 describe("SortingPolicy golden behavior", () => {
   it("keeps the current route priority order", () => {
     expect(
-      currentRouteOrder({
+      computeRouteOrder({
         bulkNonEmptyMatching: true,
         normalHasType: true,
         familyEnabledAndMatching: true,
@@ -35,7 +16,7 @@ describe("SortingPolicy golden behavior", () => {
 
   it("routes auto-created categories before misc fallback", () => {
     expect(
-      currentRouteOrder({
+      computeRouteOrder({
         bulkNonEmptyMatching: false,
         normalHasType: false,
         familyEnabledAndMatching: false,
@@ -47,7 +28,7 @@ describe("SortingPolicy golden behavior", () => {
 
   it("does not let empty bulk containers claim new item types", () => {
     expect(
-      currentRouteOrder({
+      computeRouteOrder({
         bulkNonEmptyMatching: false,
         normalHasType: true,
         familyEnabledAndMatching: false,
