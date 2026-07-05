@@ -20,7 +20,7 @@ import {
   type CustomCommandOrigin,
 } from "@minecraft/server";
 import type { CustomCommand } from "@minecraft/server";
-import { SlotOrganizer } from "../sorting/SlotOrganizer";
+import { SlotOrganizer } from "../sorting/io/SlotOrganizer";
 import type { WarehouseRepository } from "../persistence/WarehouseRepository";
 import type { ModConfigStore } from "../persistence/ModConfigStore";
 import { Logger } from "../util/Logger";

@@ -6,7 +6,7 @@
 
 import { system, type CustomCommandOrigin } from "@minecraft/server";
 import type { EntityInventoryComponent } from "@minecraft/server";
-import { SlotOrganizer } from "../../sorting/SlotOrganizer";
+import { SlotOrganizer } from "../../sorting/io/SlotOrganizer";
 import { formatOrganizeResult } from "../../ui/OrganizeFormatter";
 import { parseAnyPlayer, trySendMessage, success, failure } from "../validators/PermissionValidator";
 

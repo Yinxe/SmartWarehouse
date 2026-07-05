@@ -1,11 +1,11 @@
 import { system, ItemStack, type Container } from "@minecraft/server";
-import type { ContainerId } from "../types";
-import { Logger } from "../util/Logger";
+import type { ContainerId } from "../../types";
+import { Logger } from "../../util/Logger";
 import { restoreContainerSnapshot, snapshotContainer } from "./ContainerSnapshot";
-import { calculateMessiness as domainCalculateMessiness } from "../sorting/MessinessScore";
-import type { OrganizeResult, OrganizeOptions } from "../ui/OrganizeTypes";
-import type { MessinessScore } from "../sorting/MessinessScore";
-export type { OrganizeResult, OrganizeOptions } from "../ui/OrganizeTypes";
+import { calculateMessiness as domainCalculateMessiness } from "../algorithm/MessinessScore";
+import type { OrganizeResult, OrganizeOptions } from "../../ui/OrganizeTypes";
+import type { MessinessScore } from "../algorithm/MessinessScore";
+export type { OrganizeResult, OrganizeOptions } from "../../ui/OrganizeTypes";
 
 const log = new Logger("SlotOrganizer");
 

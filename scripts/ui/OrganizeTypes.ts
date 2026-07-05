@@ -5,7 +5,7 @@
  * 供 OrganizeFormatter（领域）和 SlotOrganizer（基础设施）跨层共享。
  */
 
-import type { MessinessScore } from "../sorting/MessinessScore";
+import type { MessinessScore } from "../sorting/algorithm/MessinessScore";
 
 /**
  * 整理选项。

@@ -1,6 +1,6 @@
 import { ItemStack, type Block, type Dimension } from "@minecraft/server";
-import type { BlockLocation } from "../types";
-import { hasInventory } from "./ContainerTypes";
+import type { BlockLocation } from "../../types";
+import { hasInventory } from "../ContainerTypes";
 
 const PROBE_ID = "minecraft:structure_void";
 const NEIGHBOR_OFFSETS: BlockLocation[] = [

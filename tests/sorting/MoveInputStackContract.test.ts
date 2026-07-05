@@ -2,8 +2,8 @@
 
 import { describe, expect, it } from "vitest";
 import { MockContainer, MockItemStack } from "../helpers/MockMinecraft";
-import { MoveJournal } from "../../scripts/sorting/MoveJournal";
-import { tryMoveStackIntoContainerWithJournal } from "../../scripts/sorting/ContainerAccess";
+import { MoveJournal } from "../../scripts/sorting/io/MoveJournal";
+import { tryMoveStackIntoContainerWithJournal } from "../../scripts/sorting/io/ContainerAccess";
 
 describe("输入堆栈事务契约", () => {
   it("可回滚MoveJournal记录的目标容器写入", () => {

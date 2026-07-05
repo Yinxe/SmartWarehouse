@@ -6,7 +6,7 @@
  */
 
 import type { ItemStack } from "@minecraft/server";
-import { SHULKER_BOX_IDS } from "./ContainerTypes";
+import { SHULKER_BOX_IDS } from "../ContainerTypes";
 
 /**
  * 判断物品堆是否为潜影盒（任意颜色）。

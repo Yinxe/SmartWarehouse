@@ -1,9 +1,9 @@
 import type { Block, Dimension } from "@minecraft/server";
-import type { BlockLocation, ContainerId, ContainerRole, StoredContainer, WarehouseArea } from "../types";
-import { compareLocationForPrimary } from "../util/Vector";
-import { makeContainerId } from "../warehouse/ContainerId";
-import { isChestType, isHopperType, isSupportedContainerType } from "../sorting/ContainerTypes";
-import { hasInventory } from "./ContainerTypes";
+import type { BlockLocation, ContainerId, ContainerRole, StoredContainer, WarehouseArea } from "../../types";
+import { compareLocationForPrimary } from "../../util/Vector";
+import { makeContainerId } from "../../warehouse/ContainerId";
+import { isChestType, isHopperType, isSupportedContainerType } from "../../sorting/ContainerTypes";
+import { hasInventory } from "../ContainerTypes";
 import { probeDoubleChestSafely } from "./SafeProbe";
 
 /** 单个箱子的最大槽位数（非双箱）。双箱的槽位数为 54，超过此值即为双箱。 */

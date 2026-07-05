@@ -7,7 +7,7 @@
 
 import { system } from "@minecraft/server";
 import type { Player } from "@minecraft/server";
-import { SlotOrganizer } from "../sorting/SlotOrganizer";
+import { SlotOrganizer } from "../sorting/io/SlotOrganizer";
 import { formatOrganizeResult } from "../ui/OrganizeFormatter";
 import { isSupportedContainerType } from "../sorting/ContainerTypes";
 import { Logger } from "../util/Logger";

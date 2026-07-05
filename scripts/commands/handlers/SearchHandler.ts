@@ -5,7 +5,7 @@
  */
 
 import { world, system, type CustomCommandOrigin } from "@minecraft/server";
-import { SearchService, formatSearchResult } from "../../warehouse/SearchService";
+import { SearchService, formatSearchResult } from "../../warehouse/search/SearchService";
 import type { WarehouseRepository } from "../../persistence/WarehouseRepository";
 import { canManageWarehouse } from "../../player/PlayerAuth";
 import { isNearAreaXZ } from "../../util/Vector";

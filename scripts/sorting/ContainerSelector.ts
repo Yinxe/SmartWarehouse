@@ -18,21 +18,21 @@ import type { ContainerId, WarehouseData, WarehouseRuntimeModel } from "../types
 import { getFamily, getFamilyById } from "../data/ItemFamilies";
 import { WarehouseRuntimeRegistry } from "../persistence/WarehouseRuntimeRegistry";
 import { Logger } from "../util/Logger";
-import { playSortEffect } from "./SortEffects";
-import { SlotOrganizer } from "../sorting/SlotOrganizer";
-import { MoveJournal } from "./MoveJournal";
+import { playSortEffect } from "./effect/SortEffects";
+import { SlotOrganizer } from "./io/SlotOrganizer";
+import { MoveJournal } from "./io/MoveJournal";
 import {
     getBulkChestFirstType,
     getContainerFromStored,
     tryMoveStackIntoContainer,
     tryMoveStackIntoContainerWithJournal
-} from "./ContainerAccess";
+} from "./io/ContainerAccess";
 import {
     containerHasType,
     getFamilyPurity,
     isContainerEmpty,
-} from "../sorting/ContainerView";
-import { sortByPurityDescending, type ScoredContainer } from "../sorting/PurityRanking";
+} from "./algorithm/ContainerView";
+import { sortByPurityDescending, type ScoredContainer } from "./algorithm/PurityRanking";
 
 const log = new Logger("ContainerSelector");
 

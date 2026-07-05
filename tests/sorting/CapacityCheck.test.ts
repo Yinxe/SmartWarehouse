@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkGroupCapacity, formatCapacityWarning, CAPACITY_WARNING_THRESHOLD } from "../../scripts/sorting/CapacityCheck";
+import { checkGroupCapacity, formatCapacityWarning, CAPACITY_WARNING_THRESHOLD } from "../../scripts/sorting/algorithm/CapacityCheck";
 
 describe("组级容量检查", () => {
   it("低使用率时不触发预警", () => {

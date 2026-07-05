@@ -1,6 +1,6 @@
 import { Dimension, MolangVariableMap, system } from "@minecraft/server";
-import type { BlockLocation, ContainerRole } from "../types";
-import { Logger } from "../util/Logger";
+import type { BlockLocation, ContainerRole } from "../../types";
+import { Logger } from "../../util/Logger";
 
 const log = new Logger("SortEffects");
 

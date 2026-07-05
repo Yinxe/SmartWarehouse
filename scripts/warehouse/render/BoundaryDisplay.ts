@@ -1,8 +1,8 @@
 import { world, system, type Dimension, type Player } from "@minecraft/server";
-import type { WarehouseId, WarehouseArea, DimensionId, WarehouseData } from "../types";
-import { Logger } from "../util/Logger";
-import { isNearAreaXZ } from "../util/Vector";
-import type { ModConfigStore } from "../persistence/ModConfigStore";
+import type { WarehouseId, WarehouseArea, DimensionId, WarehouseData } from "../../types";
+import { Logger } from "../../util/Logger";
+import { isNearAreaXZ } from "../../util/Vector";
+import type { ModConfigStore } from "../../persistence/ModConfigStore";
 
 const log = new Logger("BoundaryDisplay");
 

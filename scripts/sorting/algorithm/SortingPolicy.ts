@@ -6,7 +6,7 @@
  * 当前源码真实优先级：大宗 -> 普通同类 -> 同族 -> 自动创建 -> 杂项。
  */
 
-import type { CandidateState, RouteLevel, RoutePlan } from "./types";
+import type { CandidateState, RouteLevel, RoutePlan } from "../types";
 
 /**
  * 根据候选容器状态计算路由优先级顺序。

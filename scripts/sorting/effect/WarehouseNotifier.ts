@@ -9,10 +9,10 @@
  */
 
 import { world } from "@minecraft/server";
-import type { WarehouseData, ContainerId, ContainerStats } from "../types";
-import { getOrComputeContainerStats, refreshContainerStats } from "../warehouse/WarehouseStatsService";
-import { isNearAreaXZ } from "../util/Vector";
-import { CAPACITY_WARNING_THRESHOLD } from "./CapacityWarning";
+import type { WarehouseData, ContainerId, ContainerStats } from "../../types";
+import { getOrComputeContainerStats, refreshContainerStats } from "../../warehouse/WarehouseStatsService";
+import { isNearAreaXZ } from "../../util/Vector";
+import { CAPACITY_WARNING_THRESHOLD } from "../algorithm/CapacityWarning";
 
 /**
  * 通知器——管理冷却状态和玩家消息。

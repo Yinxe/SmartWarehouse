@@ -20,10 +20,10 @@
  */
 
 import { Dimension, type Container, type ItemStack } from "@minecraft/server";
-import type { ContainerId, StoredContainer, WarehouseData, WarehouseId } from "../types";
-import { getContainerFromStored } from "../sorting/ContainerAccess";
-import { searchItems, getChineseName } from "../data/ItemNameMap";
-import { Logger } from "../util/Logger";
+import type { ContainerId, StoredContainer, WarehouseData, WarehouseId } from "../../types";
+import { getContainerFromStored } from "../../sorting/io/ContainerAccess";
+import { searchItems, getChineseName } from "../../data/ItemNameMap";
+import { Logger } from "../../util/Logger";
 
 const log = new Logger("SearchService");
 

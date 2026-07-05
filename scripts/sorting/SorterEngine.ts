@@ -8,10 +8,10 @@ import { isNearAreaXZ } from "../util/Vector";
 import {
     getBulkChestFirstType,
     getContainerFromStored,
-} from "./ContainerAccess";
-import { isContainerEmpty } from "../sorting/ContainerView";
-import { MoveJournal } from "./MoveJournal";
-import { SlotOrganizer } from "../sorting/SlotOrganizer";
+} from "./io/ContainerAccess";
+import { isContainerEmpty } from "./algorithm/ContainerView";
+import { MoveJournal } from "./io/MoveJournal";
+import { SlotOrganizer } from "./io/SlotOrganizer";
 import { ContainerSelector } from "./ContainerSelector";
 import { getOrComputeContainerStats, refreshContainerStats } from "../warehouse/WarehouseStatsService";
 

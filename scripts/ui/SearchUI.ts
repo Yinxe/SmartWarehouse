@@ -17,8 +17,8 @@ import { ModalFormBuilder } from "./FormHelper";
 import type { BlockLocation, WarehouseData } from "../types";
 import { WarehouseRepository } from "../persistence/WarehouseRepository";
 import type { ModConfigStore } from "../persistence/ModConfigStore";
-import { SearchService, formatSearchResult } from "../warehouse/SearchService";
-import { playSearchEffect } from "../sorting/SortEffects";
+import { SearchService, formatSearchResult } from "../warehouse/search/SearchService";
+import { playSearchEffect } from "../sorting/effect/SortEffects";
 import { Logger } from "../util/Logger";
 
 const log = new Logger("SearchUI");
@@ -102,7 +102,7 @@ async function performSearch(player: Player, warehouse: WarehouseData, query: st
   const service = new SearchService();
   const dimension = world.getDimension(warehouse.dimensionId);
 
-  let result: import("../warehouse/SearchService").WarehouseSearchResult;
+  let result: import("../warehouse/search/SearchService").WarehouseSearchResult;
   try {
     result = service.search(warehouse, query, dimension);
   } catch (error) {

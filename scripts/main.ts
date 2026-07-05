@@ -2,13 +2,13 @@ import { system } from "@minecraft/server";
 import { CommandRouter } from "./commands/CommandRouter";
 import { registerToolInteraction } from "./player/ToolInteractionController";
 import { WarehouseRuntimeRegistry } from "./persistence/WarehouseRuntimeRegistry";
-import { SlotOrganizer } from "./sorting/SlotOrganizer";
+import { SlotOrganizer } from "./sorting/io/SlotOrganizer";
 import { SorterEngine } from "./sorting/SorterEngine";
 import { SortingScheduler } from "./sorting/SortingScheduler";
 import { WarehouseRepository } from "./persistence/WarehouseRepository";
 import { ModConfigStore } from "./persistence/ModConfigStore";
 import { WarehouseService } from "./warehouse/WarehouseService";
-import { BoundaryDisplay } from "./warehouse/BoundaryDisplay";
+import { BoundaryDisplay } from "./warehouse/render/BoundaryDisplay";
 
 // ── 系统初始化（在脚本启动时执行一次）───────────────────
 
