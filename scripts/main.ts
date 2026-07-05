@@ -42,8 +42,8 @@ const service = new WarehouseService(
   repository,
   configStore,
   undefined,
-  (id) => runtime.markDirty(id),
-  (id) => scheduler.refreshOne(id),
+  (id) => { runtime.markDirty(id); scheduler.markCacheDirty(); },
+  (id) => { scheduler.refreshOne(id); scheduler.markCacheDirty(); },
   boundaryDisplay
 );
 

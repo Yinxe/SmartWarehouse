@@ -82,6 +82,7 @@ export class SortingScheduler {
   // ── 轻量仓库缓存 ──
   private warehouseCache = new Map<WarehouseId, WarehouseAreaInfo>();
   private cacheVersion = 0;  // 仓库数据变化时递增，触发缓存刷新
+  private lastCacheLoad = -1;    // 上一次加载缓存的版本号
 
   // ── 通知 ──
   private readonly lastVisitor = new Map<WarehouseId, string>();
@@ -125,7 +126,7 @@ export class SortingScheduler {
 
   private tick(): void {
     this.refreshPlayerCache();
-    this.refreshWarehouseCache();
+    this.ensureCacheLoaded();
     this.manageLifecycle();
   }
 
@@ -144,13 +145,13 @@ export class SortingScheduler {
   // ─── 仓库缓存 ──────────────────────────────────────────────
 
   /**
-   * 按需刷新仓库轻量缓存。
-   * 仅加载必要字段（dimensionId + area + enabled），不加载 containers 等重量级数据。
-   * 缓存版本号变化时才刷新，避免每次 tick 都读 DP。
+   * 惰性加载缓存——只在首次调用或缓存被标记脏时重建。
+   * 仓库元数据只在用户主动修改设置时变化（创建/删除/启停/改名），
+   * 不需要每 tick 轮询刷新。
    */
-  private refreshWarehouseCache(): void {
-    // 使用 loadAllMeta() 仅读取仓库元数据，避开容器分片的重量级加载。
-    // 100 个仓库 × 1 次 DP 读取 ≈ 100 次轻量 JSON 解析，耗时 < 5ms。
+  private ensureCacheLoaded(): void {
+    if (this.cacheVersion === this.lastCacheLoad) return;
+    this.lastCacheLoad = this.cacheVersion;
     this.warehouseCache.clear();
     for (const meta of this.repository.loadAllMeta()) {
       this.warehouseCache.set(meta.id, {
