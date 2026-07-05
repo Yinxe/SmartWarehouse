@@ -22,14 +22,16 @@ import { playSortEffect } from "../SortEffects";
 import { SlotOrganizer } from "./SlotOrganizer";
 import { MoveJournal } from "./MoveJournal";
 import {
-    containerHasType,
     getBulkChestFirstType,
     getContainerFromStored,
-    getFamilyPurity,
-    isContainerEmpty,
     tryMoveStackIntoContainer,
     tryMoveStackIntoContainerWithJournal
 } from "./ContainerAccess";
+import {
+    containerHasType,
+    getFamilyPurity,
+    isContainerEmpty,
+} from "../../../domain/inventory/ContainerView";
 import { sortByPurityDescending, type ScoredContainer } from "../../../domain/sorting/PurityRanking";
 
 const log = new Logger("ContainerSelector");

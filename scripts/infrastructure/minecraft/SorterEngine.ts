@@ -8,8 +8,8 @@ import { isNearAreaXZ } from "../../domain/shared/Vector";
 import {
     getBulkChestFirstType,
     getContainerFromStored,
-    isContainerEmpty,
 } from "./container/ContainerAccess";
+import { isContainerEmpty } from "../../domain/inventory/ContainerView";
 import { MoveJournal } from "./container/MoveJournal";
 import { SlotOrganizer } from "./container/SlotOrganizer";
 import { ContainerSelector } from "./container/ContainerSelector";
