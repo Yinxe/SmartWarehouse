@@ -11,7 +11,7 @@
 import { world } from "@minecraft/server";
 import type { WarehouseData, ContainerId, ContainerStats } from "../types";
 import { getOrComputeContainerStats, refreshContainerStats } from "../warehouse/WarehouseStatsService";
-import { isNearAreaXZ } from "../warehouse/Vector";
+import { isNearAreaXZ } from "../util/Vector";
 import { CAPACITY_WARNING_THRESHOLD } from "./CapacityWarning";
 
 /**

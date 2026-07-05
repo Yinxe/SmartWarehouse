@@ -1,5 +1,32 @@
+export type DimensionId = string;
+
+/** 仓库唯一标识符 */
+export type WarehouseId = string;
+
+/** 容器唯一标识符 */
+export type ContainerId = string;
+
+/** 方块整数坐标 */
+export interface BlockLocation {
+  x: number;
+  y: number;
+  z: number;
+}
+
+/** 仓库区域，min/max 经过归一化 */
+export interface WarehouseArea {
+  min: BlockLocation;
+  max: BlockLocation;
+}
+
+/** 容器角色 */
+export type ContainerRole = "normal" | "misc" | "bulk" | "input";
+
+/** 处理速度（游戏刻间隔） */
+export type ProcessingSpeed = 4 | 8 | 16 | 20;
+
+
 import type { Vector3 } from "@minecraft/server";
-import type { WarehouseId, ContainerRole, BlockLocation } from "./identifiers";
 
 /**
  * 物品家族类型定义。每种家族包含一组互斥的物品 ID。
@@ -16,16 +43,6 @@ export interface ItemFamily {
 /**
  * 以下类型已迁移到 Domain 层，从 Domain 模块 re-export 以保持向后兼容。
  */
-export type {
-  DimensionId,
-  WarehouseId,
-  ContainerId,
-  BlockLocation,
-  WarehouseArea,
-  ContainerRole,
-  ProcessingSpeed,
-} from "./identifiers";
-
 export {
   ROLE_DESCRIPTIONS,
   ROLE_LABELS,

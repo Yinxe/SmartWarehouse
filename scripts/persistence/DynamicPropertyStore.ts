@@ -1,5 +1,5 @@
 import { world } from "@minecraft/server";
-import { getUtf16Length, parseJsonObject, stringifyJson } from "../persistence/Json";
+import { getUtf16Length, parseJsonObject, stringifyJson } from "../util/Json";
 
 export const DEFAULT_DYNAMIC_PROPERTY_SAFE_LENGTH = 24_000;
 

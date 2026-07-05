@@ -11,12 +11,12 @@ import type {
 } from "../types";
 import { toBlockLocation, ROLE_LABELS } from "../types";
 import { DEFAULT_WAREHOUSE_SETTINGS, normalizeWarehouseId, WarehouseRepository } from "../persistence/WarehouseRepository";
-import { areaVolume, areasTooClose, isInsideArea, normalizeArea } from "../warehouse/Vector";
+import { areaVolume, areasTooClose, isInsideArea, normalizeArea } from "../util/Vector";
 import { ContainerScanner } from "./ContainerScanner";
 import { isHopperType, isSupportedContainerType } from "../sorting/ContainerTypes";
 import { hasInventory } from "./ContainerTypes";
 import { makeContainerId } from "../warehouse/ContainerId";
-import { compareLocationForPrimary } from "../warehouse/Vector";
+import { compareLocationForPrimary } from "../util/Vector";
 import { BoundaryDisplay } from "./BoundaryDisplay";
 import { diffRescanContainers } from "../warehouse/WarehouseRescanDiff";
 import { invalidateWarehouseStats } from "./WarehouseStatsService";

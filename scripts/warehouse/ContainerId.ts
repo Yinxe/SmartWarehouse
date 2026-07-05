@@ -5,7 +5,7 @@
  */
 
 import type { BlockLocation, ContainerId, DimensionId } from "../types";
-import { locationKey } from "./Vector";
+import { locationKey } from "../util/Vector";
 
 /**
  * 根据维度 ID 和容器的主位置生成唯一的容器标识符。

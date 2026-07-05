@@ -4,7 +4,7 @@ import { WarehouseRuntimeRegistry } from "../persistence/WarehouseRuntimeRegistr
 import { WarehouseRepository } from "../persistence/WarehouseRepository";
 import type { ContainerId, WarehouseData, WarehouseId, WarehouseRuntimeModel } from "../types";
 import { Logger } from "../util/Logger";
-import { isNearAreaXZ } from "../warehouse/Vector";
+import { isNearAreaXZ } from "../util/Vector";
 import {
     getBulkChestFirstType,
     getContainerFromStored,

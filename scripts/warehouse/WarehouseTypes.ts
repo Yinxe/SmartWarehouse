@@ -5,7 +5,7 @@
  * 不依赖 Minecraft 运行时 API，允许 ItemStack 进入。
  */
 
-import type { BlockLocation, WarehouseArea, ContainerRole, ProcessingSpeed, WarehouseId, ContainerId, DimensionId } from "../identifiers";
+import type { BlockLocation, WarehouseArea, ContainerRole, ProcessingSpeed, WarehouseId, ContainerId, DimensionId } from "../types";
 
 /** 仓库全局设置 */
 export interface WarehouseSettings {
