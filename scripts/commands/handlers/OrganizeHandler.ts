@@ -6,8 +6,8 @@
 
 import { system, type CustomCommandOrigin } from "@minecraft/server";
 import type { EntityInventoryComponent } from "@minecraft/server";
-import { SlotOrganizer } from "../../infrastructure/minecraft/container/SlotOrganizer";
-import { formatOrganizeResult } from "../../domain/shared/OrganizeFormatter";
+import { SlotOrganizer } from "../../sorting/SlotOrganizer";
+import { formatOrganizeResult } from "../../lib/OrganizeFormatter";
 import { parseAnyPlayer, trySendMessage, success, failure } from "../validators/PermissionValidator";
 
 /**

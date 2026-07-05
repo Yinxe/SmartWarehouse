@@ -7,8 +7,8 @@
 
 import { CommandPermissionLevel, Player, CustomCommandStatus, type CustomCommandOrigin } from "@minecraft/server";
 import type { CustomCommandResult } from "@minecraft/server";
-import { canManageWarehouse } from "../../infrastructure/PlayerAuth";
-import { Logger } from "../../infrastructure/Logger";
+import { canManageWarehouse } from "../../player/PlayerAuth";
+import { Logger } from "../../util/Logger";
 
 const log = new Logger("CommandValidator");
 

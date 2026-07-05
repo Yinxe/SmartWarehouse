@@ -1,7 +1,7 @@
 import type { Player } from "@minecraft/server";
 import { ModalFormBuilder } from "./FormHelper";
 import { ROLE_LABELS, ROLE_ORDER } from "../types";
-import { setSession } from "../interaction/SelectionSessionStore";
+import { setSession } from "../player/SelectionSessionStore";
 
 /**
  * 显示仓库创建表单。

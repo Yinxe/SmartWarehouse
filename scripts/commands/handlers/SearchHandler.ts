@@ -5,10 +5,10 @@
  */
 
 import { world, system, type CustomCommandOrigin } from "@minecraft/server";
-import { SearchService, formatSearchResult } from "../../infrastructure/minecraft/SearchService";
-import type { WarehouseRepository } from "../../infrastructure/persistence/WarehouseRepository";
-import { canManageWarehouse } from "../../infrastructure/PlayerAuth";
-import { isNearAreaXZ } from "../../domain/shared/Vector";
+import { SearchService, formatSearchResult } from "../../warehouse/SearchService";
+import type { WarehouseRepository } from "../../persistence/WarehouseRepository";
+import { canManageWarehouse } from "../../player/PlayerAuth";
+import { isNearAreaXZ } from "../../lib/Vector";
 import { parseCommandPlayer, trySendMessage, success, failure } from "../validators/PermissionValidator";
 import { parseWarehouseId } from "../validators/ParameterParser";
 import type { Player } from "@minecraft/server";

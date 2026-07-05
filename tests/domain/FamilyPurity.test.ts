@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateFamilyPurity, sortByFamilyPurity } from "../../scripts/domain/sorting/FamilyPurity";
+import { calculateFamilyPurity, sortByFamilyPurity } from "../../scripts/lib/FamilyPurity";
 
 const WOOL_SET = new Set([
   "minecraft:white_wool", "minecraft:orange_wool", "minecraft:magenta_wool",

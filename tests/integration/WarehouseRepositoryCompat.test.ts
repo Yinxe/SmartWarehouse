@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { FakeDynamicPropertyStore } from "../helpers/FakeDynamicPropertyStore";
-import { WarehouseRepository } from "../../scripts/infrastructure/persistence/WarehouseRepository";
+import { WarehouseRepository } from "../../scripts/persistence/WarehouseRepository";
 
 function key(id: string, generation: number, shard: number): string {
   return `sw:warehouse:${id}:${generation}:containers:${shard}`;

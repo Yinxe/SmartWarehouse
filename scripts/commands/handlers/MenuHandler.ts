@@ -6,11 +6,11 @@
 
 import { system, type CustomCommandOrigin } from "@minecraft/server";
 import { showMainMenu } from "../../ui/MainMenu";
-import type { WarehouseService } from "../../infrastructure/minecraft/WarehouseService";
-import type { WarehouseRepository } from "../../infrastructure/persistence/WarehouseRepository";
-import type { ModConfigStore } from "../../infrastructure/persistence/ModConfigStore";
+import type { WarehouseService } from "../../warehouse/WarehouseService";
+import type { WarehouseRepository } from "../../persistence/WarehouseRepository";
+import type { ModConfigStore } from "../../persistence/ModConfigStore";
 import { parseAnyPlayer, success, failure } from "../validators/PermissionValidator";
-import { Logger } from "../../infrastructure/Logger";
+import { Logger } from "../../util/Logger";
 
 const log = new Logger("MenuHandler");
 

@@ -13,8 +13,8 @@
 
 import { type Player } from "@minecraft/server";
 import { ModalFormBuilder } from "./FormHelper";
-import type { WarehouseRepository } from "../infrastructure/persistence/WarehouseRepository";
-import type { WarehouseService } from "../infrastructure/minecraft/WarehouseService";
+import type { WarehouseRepository } from "../persistence/WarehouseRepository";
+import type { WarehouseService } from "../warehouse/WarehouseService";
 import type { WarehouseId } from "../types";
 import { ALL_FAMILIES } from "../data/ItemFamilies";
 

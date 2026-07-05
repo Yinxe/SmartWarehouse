@@ -1,5 +1,5 @@
 import type { Vector3 } from "@minecraft/server";
-import type { WarehouseId, ContainerRole, BlockLocation } from "./domain/shared/identifiers";
+import type { WarehouseId, ContainerRole, BlockLocation } from "./lib/identifiers";
 
 /**
  * 物品家族类型定义。每种家族包含一组互斥的物品 ID。
@@ -24,7 +24,7 @@ export type {
   WarehouseArea,
   ContainerRole,
   ProcessingSpeed,
-} from "./domain/shared/identifiers";
+} from "./lib/identifiers";
 
 export {
   ROLE_DESCRIPTIONS,
@@ -33,7 +33,7 @@ export {
   SPEED_LABELS,
   DEFAULT_PROCESSING_SPEED,
   DEFAULT_WAREHOUSE_SETTINGS,
-} from "./domain/warehouse/WarehouseTypes";
+} from "./lib/WarehouseTypes";
 
 export type {
   WarehouseSettings,
@@ -43,9 +43,9 @@ export type {
   ContainerStats,
   WarehouseContainerShard,
   WarehouseData,
-} from "./domain/warehouse/WarehouseTypes";
+} from "./lib/WarehouseTypes";
 
-export type { RuntimeContainer, WarehouseRuntimeModel } from "./domain/warehouse/WarehouseRuntimeModel";
+export type { RuntimeContainer, WarehouseRuntimeModel } from "./lib/WarehouseRuntimeModel";
 
 /**
  * 选区会话状态，用于记录玩家正在进行的方块选区操作。

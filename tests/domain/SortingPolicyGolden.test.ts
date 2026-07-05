@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeRouteOrder } from "../../scripts/domain/sorting/SortingPolicy";
+import { computeRouteOrder } from "../../scripts/lib/SortingPolicy";
 
 describe("排序策略黄金行为", () => {
   it("保持当前的路由优先级顺序", () => {

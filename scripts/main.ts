@@ -1,14 +1,14 @@
 import { system } from "@minecraft/server";
 import { CommandRouter } from "./commands/CommandRouter";
-import { registerToolInteraction } from "./interaction/ToolInteractionController";
-import { WarehouseRuntimeRegistry } from "./infrastructure/cache/WarehouseRuntimeRegistry";
-import { SlotOrganizer } from "./infrastructure/minecraft/container/SlotOrganizer";
-import { SorterEngine } from "./infrastructure/minecraft/SorterEngine";
-import { SortingScheduler } from "./infrastructure/minecraft/scheduling/SortingScheduler";
-import { WarehouseRepository } from "./infrastructure/persistence/WarehouseRepository";
-import { ModConfigStore } from "./infrastructure/persistence/ModConfigStore";
-import { WarehouseService } from "./infrastructure/minecraft/WarehouseService";
-import { BoundaryDisplay } from "./infrastructure/minecraft/BoundaryDisplay";
+import { registerToolInteraction } from "./player/ToolInteractionController";
+import { WarehouseRuntimeRegistry } from "./persistence/WarehouseRuntimeRegistry";
+import { SlotOrganizer } from "./sorting/SlotOrganizer";
+import { SorterEngine } from "./sorting/SorterEngine";
+import { SortingScheduler } from "./sorting/SortingScheduler";
+import { WarehouseRepository } from "./persistence/WarehouseRepository";
+import { ModConfigStore } from "./persistence/ModConfigStore";
+import { WarehouseService } from "./warehouse/WarehouseService";
+import { BoundaryDisplay } from "./warehouse/BoundaryDisplay";
 
 // ── 系统初始化（在脚本启动时执行一次）───────────────────
 

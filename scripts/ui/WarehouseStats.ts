@@ -1,16 +1,16 @@
 /**
  * 仓库统计 UI 格式化。
  *
- * 统计计算和缓存逻辑已迁移到 infrastructure/WarehouseStatsService.ts，
+ * 统计计算和缓存逻辑已迁移到 warehouse/WarehouseStatsService.ts，
  * 此文件仅保留格式化显示相关函数。
  */
 
 import { Table, Cell } from "./Table";
-import { CAPACITY_WARNING_THRESHOLD } from "../domain/sorting/CapacityWarning";
-import type { WarehouseStats, RoleStats } from "../infrastructure/WarehouseStatsService";
+import { CAPACITY_WARNING_THRESHOLD } from "../lib/CapacityWarning";
+import type { WarehouseStats, RoleStats } from "../warehouse/WarehouseStatsService";
 
 // 为兼容旧导入路径重新导出基础函数
-export { CAPACITY_WARNING_THRESHOLD } from "../domain/sorting/CapacityWarning";
+export { CAPACITY_WARNING_THRESHOLD } from "../lib/CapacityWarning";
 export {
   setContainerStats,
   invalidateWarehouseStats,
@@ -19,8 +19,8 @@ export {
   getWarehouseStats,
   isContainerNearFull,
   isContainerFull,
-} from "../infrastructure/WarehouseStatsService";
-export type { WarehouseStats, RoleStats } from "../infrastructure/WarehouseStatsService";
+} from "../warehouse/WarehouseStatsService";
+export type { WarehouseStats, RoleStats } from "../warehouse/WarehouseStatsService";
 
 // ─── 格式化函数 ─────────────────────────────────────────────────
 

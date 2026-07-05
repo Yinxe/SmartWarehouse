@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateIndexCandidates, cleanStaleIndexEntries, mergeIntoIndex } from "../../scripts/domain/sorting/IndexSelfHealing";
+import { validateIndexCandidates, cleanStaleIndexEntries, mergeIntoIndex } from "../../scripts/lib/IndexSelfHealing";
 
 function makeContainerMap(entries: Record<string, { role: string; enabled: boolean; types: string[] }>) {
   const result: Record<string, { role: string; enabled: boolean; containsType: (typeId: string) => boolean }> = {};

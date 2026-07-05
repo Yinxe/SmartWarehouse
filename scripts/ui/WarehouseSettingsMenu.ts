@@ -1,10 +1,10 @@
 import type { Player } from "@minecraft/server";
 import { system } from "@minecraft/server";
-import { clearSession, setSession } from "../interaction/SelectionSessionStore";
-import type { WarehouseRepository } from "../infrastructure/persistence/WarehouseRepository";
+import { clearSession, setSession } from "../player/SelectionSessionStore";
+import type { WarehouseRepository } from "../persistence/WarehouseRepository";
 import type { WarehouseId, WarehouseSettings } from "../types";
 import { ROLE_LABELS, ROLE_ORDER, SPEED_LABELS } from "../types";
-import type { WarehouseService } from "../infrastructure/minecraft/WarehouseService";
+import type { WarehouseService } from "../warehouse/WarehouseService";
 import { getWarehouseStats, formatWarehouseStats, invalidateWarehouseStats } from "./WarehouseStats";
 import { showFamilyConfigMenu } from "./FamilyConfigMenu";
 import { ModalFormBuilder, ActionFormBuilder } from "./FormHelper";

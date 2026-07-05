@@ -6,7 +6,7 @@
  */
 
 import { system, type Vector3, type CustomCommandOrigin } from "@minecraft/server";
-import type { WarehouseService } from "../../infrastructure/minecraft/WarehouseService";
+import type { WarehouseService } from "../../warehouse/WarehouseService";
 import { parseCommandPlayer, trySendMessage, success, failure } from "../validators/PermissionValidator";
 import { parseWarehouseId, toBlockLocation } from "../validators/ParameterParser";
 

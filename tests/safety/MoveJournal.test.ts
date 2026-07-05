@@ -1,5 +1,5 @@
 import type { Container } from "@minecraft/server";
-import { MoveJournal } from "../../scripts/infrastructure/minecraft/container/MoveJournal";
+import { MoveJournal } from "../../scripts/sorting/container/MoveJournal";
 import { MockContainer, MockItemStack } from "../helpers/MockMinecraft";
 import { assert } from "../helpers/Assert";
 

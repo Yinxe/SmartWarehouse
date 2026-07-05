@@ -20,11 +20,11 @@ import {
   type CustomCommandOrigin,
 } from "@minecraft/server";
 import type { CustomCommand } from "@minecraft/server";
-import { SlotOrganizer } from "../infrastructure/minecraft/container/SlotOrganizer";
-import type { WarehouseRepository } from "../infrastructure/persistence/WarehouseRepository";
-import type { ModConfigStore } from "../infrastructure/persistence/ModConfigStore";
-import { Logger } from "../infrastructure/Logger";
-import type { WarehouseService } from "../infrastructure/minecraft/WarehouseService";
+import { SlotOrganizer } from "../sorting/SlotOrganizer";
+import type { WarehouseRepository } from "../persistence/WarehouseRepository";
+import type { ModConfigStore } from "../persistence/ModConfigStore";
+import { Logger } from "../util/Logger";
+import type { WarehouseService } from "../warehouse/WarehouseService";
 import { WarehouseHandlers } from "./handlers/WarehouseHandlers";
 import { handleOrganize } from "./handlers/OrganizeHandler";
 import { handleMenu } from "./handlers/MenuHandler";

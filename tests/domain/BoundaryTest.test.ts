@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { WarehouseId, ContainerId, DimensionId, BlockLocation } from "../../scripts/domain/shared/identifiers";
+import type { WarehouseId, ContainerId, DimensionId, BlockLocation } from "../../scripts/lib/identifiers";
 
 describe("领域共享类型", () => {
   it("可在无Minecraft运行时依赖下使用", () => {

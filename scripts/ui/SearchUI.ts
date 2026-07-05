@@ -15,11 +15,11 @@
 import { world, system, type Player } from "@minecraft/server";
 import { ModalFormBuilder } from "./FormHelper";
 import type { BlockLocation, WarehouseData } from "../types";
-import { WarehouseRepository } from "../infrastructure/persistence/WarehouseRepository";
-import type { ModConfigStore } from "../infrastructure/persistence/ModConfigStore";
-import { SearchService, formatSearchResult } from "../infrastructure/minecraft/SearchService";
-import { playSearchEffect } from "../infrastructure/minecraft/SortEffects";
-import { Logger } from "../infrastructure/Logger";
+import { WarehouseRepository } from "../persistence/WarehouseRepository";
+import type { ModConfigStore } from "../persistence/ModConfigStore";
+import { SearchService, formatSearchResult } from "../warehouse/SearchService";
+import { playSearchEffect } from "../sorting/SortEffects";
+import { Logger } from "../util/Logger";
 
 const log = new Logger("SearchUI");
 
@@ -102,7 +102,7 @@ async function performSearch(player: Player, warehouse: WarehouseData, query: st
   const service = new SearchService();
   const dimension = world.getDimension(warehouse.dimensionId);
 
-  let result: import("../infrastructure/minecraft/SearchService").WarehouseSearchResult;
+  let result: import("../warehouse/SearchService").WarehouseSearchResult;
   try {
     result = service.search(warehouse, query, dimension);
   } catch (error) {

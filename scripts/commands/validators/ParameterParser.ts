@@ -6,7 +6,7 @@
  */
 
 import type { WarehouseId } from "../../types";
-import { normalizeWarehouseId } from "../../infrastructure/persistence/WarehouseRepository";
+import { normalizeWarehouseId } from "../../persistence/WarehouseRepository";
 
 type ParseWarehouseIdResult = { ok: true; id: WarehouseId } | { ok: false; message: string };
 

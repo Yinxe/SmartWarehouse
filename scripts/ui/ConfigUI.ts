@@ -13,9 +13,9 @@
 
 import { type Player } from "@minecraft/server";
 import { ModalFormBuilder } from "./FormHelper";
-import type { ModConfigStore } from "../infrastructure/persistence/ModConfigStore";
-import { TOKEN_OPTIONS, SIZE_OPTIONS, CONTAINER_OPTIONS } from "../infrastructure/persistence/ModConfigStore";
-import { canManageWarehouse } from "../infrastructure/PlayerAuth";
+import type { ModConfigStore } from "../persistence/ModConfigStore";
+import { TOKEN_OPTIONS, SIZE_OPTIONS, CONTAINER_OPTIONS } from "../persistence/ModConfigStore";
+import { canManageWarehouse } from "../player/PlayerAuth";
 
 /**
  * 显示模组全局配置界面。

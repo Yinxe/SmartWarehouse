@@ -1,7 +1,7 @@
 import type { Container } from "@minecraft/server";
-import { restoreContainerSnapshot, snapshotContainer } from "../../scripts/infrastructure/minecraft/container/ContainerSnapshot";
-import { SlotOrganizer } from "../../scripts/infrastructure/minecraft/container/SlotOrganizer";
-import type { ContainerAnalysis } from "../../scripts/infrastructure/minecraft/container/SlotOrganizer";
+import { restoreContainerSnapshot, snapshotContainer } from "../../scripts/sorting/container/ContainerSnapshot";
+import { SlotOrganizer } from "../../scripts/sorting/container/SlotOrganizer";
+import type { ContainerAnalysis } from "../../scripts/sorting/container/SlotOrganizer";
 import { MockContainer, MockItemStack } from "../helpers/MockMinecraft";
 import { assert } from "../helpers/Assert";
 
