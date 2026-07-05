@@ -56,11 +56,7 @@ export interface WarehouseStats {
  * 直接将容器统计写入缓存 + DP。
  * 用于容器设置页等已有现场扫描数据的场景，避免重复扫描。
  */
-export function setContainerStats(
-  warehouseId: WarehouseId,
-  containerId: ContainerId,
-  stats: ContainerStats
-): void {
+export function setContainerStats(warehouseId: WarehouseId, containerId: ContainerId, stats: ContainerStats): void {
   let whCache = containerCache.get(warehouseId);
   if (!whCache) {
     whCache = new Map();
@@ -121,10 +117,7 @@ export function getOrComputeContainerStats(
  * 分拣写入后立即重算单个容器的统计并持久化。
  * 由 SorterEngine 在每次成功写入容器后调用。
  */
-export function refreshContainerStats(
-  warehouse: WarehouseData,
-  stored: StoredContainer
-): ContainerStats | undefined {
+export function refreshContainerStats(warehouse: WarehouseData, stored: StoredContainer): ContainerStats | undefined {
   const fresh = computeContainerStats(warehouse.dimensionId, stored);
   if (!fresh) return undefined;
 
@@ -161,8 +154,12 @@ export function getWarehouseStats(warehouse: WarehouseData): WarehouseStats {
     if (stats.isWarning) hasWarning = true;
 
     const existing = byRole[stats.role] ?? {
-      containerCount: 0, totalSlots: 0, usedSlots: 0,
-      totalItems: 0, uniqueTypes: 0, hasWarning: false,
+      containerCount: 0,
+      totalSlots: 0,
+      usedSlots: 0,
+      totalItems: 0,
+      uniqueTypes: 0,
+      hasWarning: false,
     };
     existing.containerCount++;
     existing.totalSlots += stats.totalSlots;
@@ -197,7 +194,9 @@ export function isContainerNearFull(container: Container): boolean {
   for (let slot = 0; slot < container.size; slot++) {
     try {
       if (container.getItem(slot)) usedSlots++;
-    } catch { /* 跳过 */ }
+    } catch {
+      /* 跳过 */
+    }
   }
   return container.size > 0 && usedSlots / container.size >= CAPACITY_WARNING_THRESHOLD;
 }
@@ -211,10 +210,7 @@ export function isContainerFull(container: Container): boolean {
 
 // ─── 内部计算 ──────────────────────────────────────────────────
 
-function computeContainerStats(
-  dimensionId: string,
-  container: StoredContainer
-): ContainerStats | undefined {
+function computeContainerStats(dimensionId: string, container: StoredContainer): ContainerStats | undefined {
   try {
     const dimension = world.getDimension(dimensionId);
     const mcContainer = getContainerFromStored(dimension, container);
@@ -233,7 +229,9 @@ function computeContainerStats(
           totalItems += stack.amount;
           uniqueTypesSet.add(stack.typeId);
         }
-      } catch { /* 跳过 */ }
+      } catch {
+        /* 跳过 */
+      }
     }
 
     const blockType = getBlockTypeLabel(dimension, container.primaryLocation);
@@ -254,10 +252,15 @@ function computeContainerStats(
   }
 }
 
-function getBlockTypeLabel(dimension: import("@minecraft/server").Dimension, location: import("../types").BlockLocation): string {
+function getBlockTypeLabel(
+  dimension: import("@minecraft/server").Dimension,
+  location: import("../types").BlockLocation
+): string {
   try {
     const block = dimension.getBlock(location);
     if (block) return block.typeId.replace("minecraft:", "");
-  } catch { /* 默认 */ }
+  } catch {
+    /* 默认 */
+  }
   return "unknown";
 }

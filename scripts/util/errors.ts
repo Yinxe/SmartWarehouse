@@ -4,9 +4,7 @@
  * Domain 方法不抛异常，而是返回 Result 以便 Application 层处理恢复策略。
  */
 
-export type Result<T, E = string> =
-  | { ok: true; value: T }
-  | { ok: false; error: E };
+export type Result<T, E = string> = { ok: true; value: T } | { ok: false; error: E };
 
 export function ok<T>(value: T): Result<T> {
   return { ok: true, value };

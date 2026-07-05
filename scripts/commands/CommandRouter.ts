@@ -13,14 +13,8 @@
  * ============================================================================
  */
 
-import {
-  system,
-  CustomCommandParamType,
-  type Vector3,
-  type CustomCommandOrigin,
-} from "@minecraft/server";
+import { system, CustomCommandParamType, type Vector3 } from "@minecraft/server";
 import type { CustomCommand } from "@minecraft/server";
-import { SlotOrganizer } from "../sorting/io/SlotOrganizer";
 import type { WarehouseRepository } from "../persistence/WarehouseRepository";
 import type { ModConfigStore } from "../persistence/ModConfigStore";
 import { Logger } from "../util/Logger";
@@ -135,7 +129,9 @@ export class CommandRouter {
         (origin, query: string) => handleSearch(origin, query, this.repository)
       );
 
-      log.info("Custom commands registered (sw:create/sw:resize/sw:rescan/sw:delete/sw:rescan_preview/sw:organize/sw:menu/sw:search)");
+      log.info(
+        "Custom commands registered (sw:create/sw:resize/sw:rescan/sw:delete/sw:rescan_preview/sw:organize/sw:menu/sw:search)"
+      );
     });
   }
 }

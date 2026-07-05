@@ -6,7 +6,7 @@
  */
 
 import { world, system } from "@minecraft/server";
-import type { Player } from "@minecraft/server"
+import type { Player } from "@minecraft/server";
 import type { BlockLocation } from "../types";
 import { isSupportedContainerType } from "../sorting/ContainerTypes";
 import type { WarehouseService } from "../warehouse/WarehouseService";
@@ -40,7 +40,9 @@ export function handleContainerClick(
         player.sendMessage("§a已触发仓库重扫，容器数据将在下次扫描后更新");
         return;
       }
-    } catch { /* 静默 */ }
+    } catch {
+      /* 静默 */
+    }
     player.sendMessage("§c无法找到容器信息（数据可能已过期，可尝试 /sw:rescan 修复）");
     return;
   }

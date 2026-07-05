@@ -95,8 +95,7 @@ export class ModConfigStore {
           maxContainers: parsed.maxContainers ?? 50,
         };
         return this.cached;
-      } catch {
-      }
+      } catch {}
     }
 
     this.cached = { tokenItemId: DEFAULT_TOKEN, maxSizeX: 16, maxSizeY: 16, maxSizeZ: 16, maxContainers: 50 };
@@ -128,7 +127,9 @@ export class ModConfigStore {
     return c.maxSizeX * c.maxSizeY * c.maxSizeZ;
   }
 
-  getMaxContainers(): number { return this.load().maxContainers; }
+  getMaxContainers(): number {
+    return this.load().maxContainers;
+  }
 
   invalidateCache(): void {
     this.cached = null;

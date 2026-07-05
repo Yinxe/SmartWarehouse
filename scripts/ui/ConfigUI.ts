@@ -39,9 +39,24 @@ export async function showConfigUI(player: Player, configStore: ModConfigStore):
   const vals = await new ModalFormBuilder()
     .title("SmartWarehouse 配置")
     .label("info", "§7配置模组的全局设置")
-    .dropdown("token", "§a选择信物", TOKEN_OPTIONS.map((o) => o.label), { defaultValueIndex: Math.max(0, tokenIdx) })
-    .dropdown("size", "§a仓库最大尺寸", SIZE_OPTIONS.map((o) => o.label), { defaultValueIndex: Math.max(0, sizeIdx) })
-    .dropdown("containers", "§a单仓库最大容器数", CONTAINER_OPTIONS.map((o) => o.label), { defaultValueIndex: Math.max(0, conIdx) })
+    .dropdown(
+      "token",
+      "§a选择信物",
+      TOKEN_OPTIONS.map((o) => o.label),
+      { defaultValueIndex: Math.max(0, tokenIdx) }
+    )
+    .dropdown(
+      "size",
+      "§a仓库最大尺寸",
+      SIZE_OPTIONS.map((o) => o.label),
+      { defaultValueIndex: Math.max(0, sizeIdx) }
+    )
+    .dropdown(
+      "containers",
+      "§a单仓库最大容器数",
+      CONTAINER_OPTIONS.map((o) => o.label),
+      { defaultValueIndex: Math.max(0, conIdx) }
+    )
     .show(player);
 
   if (!vals) return;
@@ -69,7 +84,5 @@ export async function showConfigUI(player: Player, configStore: ModConfigStore):
   } else if (selToken) {
     player.sendMessage(`§a信物已设置为 ${selToken.label}§a，手持该物品即可触发仓库交互`);
   }
-  player.sendMessage(
-    `§7仓库最大尺寸: ${selSize?.label ?? "16×16×16"}，最大容器数: ${selCon?.label ?? "200"}`
-  );
+  player.sendMessage(`§7仓库最大尺寸: ${selSize?.label ?? "16×16×16"}，最大容器数: ${selCon?.label ?? "200"}`);
 }

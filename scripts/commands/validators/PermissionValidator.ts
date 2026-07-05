@@ -5,12 +5,9 @@
  * 与 Minecraft 命令引擎的 CustomCommandOrigin 解耦。
  */
 
-import { CommandPermissionLevel, Player, CustomCommandStatus, type CustomCommandOrigin } from "@minecraft/server";
+import { Player, CustomCommandStatus, type CustomCommandOrigin } from "@minecraft/server";
 import type { CustomCommandResult } from "@minecraft/server";
 import { canManageWarehouse } from "../../player/PlayerAuth";
-import { Logger } from "../../util/Logger";
-
-const log = new Logger("CommandValidator");
 
 /** 校验结果类型：ok 时携带 Player，失败时携带错误消息 */
 type PlayerResult = { ok: true; player: Player } | { ok: false; message: string };

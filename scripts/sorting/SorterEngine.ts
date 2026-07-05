@@ -1,14 +1,11 @@
-import { Container, Dimension, ItemStack, system, world } from "@minecraft/server";
+import { Dimension, ItemStack, system, world } from "@minecraft/server";
 import { getFamily } from "../data/ItemFamilies";
 import { WarehouseRuntimeRegistry } from "../persistence/WarehouseRuntimeRegistry";
 import { WarehouseRepository } from "../persistence/WarehouseRepository";
 import type { ContainerId, WarehouseData, WarehouseId, WarehouseRuntimeModel } from "../types";
 import { Logger } from "../util/Logger";
 import { isNearAreaXZ } from "../util/Vector";
-import {
-    getBulkChestFirstType,
-    getContainerFromStored,
-} from "./io/ContainerAccess";
+import { getBulkChestFirstType, getContainerFromStored } from "./io/ContainerAccess";
 import { isContainerEmpty } from "./algorithm/ContainerView";
 import { MoveJournal } from "./io/MoveJournal";
 import { SlotOrganizer } from "./io/SlotOrganizer";
@@ -48,9 +45,9 @@ export class SorterEngine {
   constructor(
     private readonly repository: WarehouseRepository,
     private readonly runtime: WarehouseRuntimeRegistry,
-    private readonly organizer?: SlotOrganizer
+    organizer?: SlotOrganizer
   ) {
-    this.selector = new ContainerSelector(runtime, organizer);
+    this.selector = new ContainerSelector(organizer);
   }
 
   // ─── 公开入口 ───────────────────────────────────────────────────
@@ -211,7 +208,7 @@ export class SorterEngine {
           return;
         }
         // 访问 permutation 确认区块真正加载（getBlock 在部分版本可能返回占位对象）
-        const _ = block.permutation;
+        void block.permutation;
       } catch {
         model.areaLoaded = false;
         model.areaLoadedCheckedTick = system.currentTick;
@@ -259,8 +256,6 @@ export class SorterEngine {
 
       const container = getContainerFromStored(dimension, stored);
       if (!container) return;
-
-      const loc = stored.primaryLocation;
 
       // ── 快速判空：输入容器全空 → 仓库进入空闲 ──
       // 当前输入容器为空 → 跳过，游标下个 interval 选下一个容器
@@ -388,7 +383,7 @@ export class SorterEngine {
       if (isContainerEmpty(target)) return false; // 空箱需玩家手动放入第一件物品
       return getBulkChestFirstType(target) === typeId;
     });
-    const bulkResult = this.selector.tryPlaceInBulkContainers(remaining, bulkMatches, warehouse, model, dimension, journal);
+    const bulkResult = this.selector.tryPlaceInBulkContainers(remaining, bulkMatches, warehouse, dimension, journal);
     remaining = bulkResult.remaining;
     if (remaining === undefined) return undefined;
 
@@ -397,7 +392,15 @@ export class SorterEngine {
     /** 前一级别剩余量，用于检测降级 */
     let prevAmount = remaining.amount;
     let normalCandidates = this.selector.findExistingTypeContainers(warehouse, model, typeId, dimension);
-    let normalResult = this.selector.tryPlaceInContainers(remaining, normalCandidates, warehouse, model, dimension, journal, "match");
+    let normalResult = this.selector.tryPlaceInContainers(
+      remaining,
+      normalCandidates,
+      warehouse,
+      model,
+      dimension,
+      journal,
+      "match"
+    );
 
     // 索引自愈：index 有候选但全放不进 → 可能有玩家手动放置的新容器
     // 触发全量扫描发现后重试（若 findExistingTypeContainers 已做全扫则跳过）
@@ -443,7 +446,15 @@ export class SorterEngine {
     const enabledFamilies = warehouse.settings.enabledFamilies ?? [];
     if (family && enabledFamilies.includes(family.id)) {
       const familyCandidates = this.selector.findExistingFamilyContainers(warehouse, model, family.id, dimension);
-      const familyResult = this.selector.tryPlaceInContainers(remaining, familyCandidates, warehouse, model, dimension, journal, "family");
+      const familyResult = this.selector.tryPlaceInContainers(
+        remaining,
+        familyCandidates,
+        warehouse,
+        model,
+        dimension,
+        journal,
+        "family"
+      );
       remaining = familyResult.remaining;
       this.checkGroupCapacity(warehouse, familyCandidates, typeId, "同族", familyResult.modifiedIds);
       if (remaining === undefined) return undefined;
@@ -455,7 +466,15 @@ export class SorterEngine {
     if (warehouse.settings.autoCreateCategories) {
       const freeNormal = this.selector.findEmptyNormalContainer(warehouse, model, dimension);
       if (freeNormal) {
-        const autoResult = this.selector.tryPlaceInContainers(remaining, [freeNormal], warehouse, model, dimension, journal, "autocreate");
+        const autoResult = this.selector.tryPlaceInContainers(
+          remaining,
+          [freeNormal],
+          warehouse,
+          model,
+          dimension,
+          journal,
+          "autocreate"
+        );
         remaining = autoResult.remaining;
         this.checkGroupCapacity(warehouse, [freeNormal], typeId, "自动分类", autoResult.modifiedIds);
         if (remaining === undefined) return undefined;
@@ -464,7 +483,15 @@ export class SorterEngine {
     }
 
     // ── 优先级 5：杂项（兜底）──────────────────────────────────
-    const miscResult = this.selector.tryPlaceInContainers(remaining, model.miscContainerIds, warehouse, model, dimension, journal, "misc");
+    const miscResult = this.selector.tryPlaceInContainers(
+      remaining,
+      model.miscContainerIds,
+      warehouse,
+      model,
+      dimension,
+      journal,
+      "misc"
+    );
     remaining = miscResult.remaining;
 
     // 普通降级/阈值互斥检测
@@ -490,8 +517,6 @@ export class SorterEngine {
 
     return remaining;
   }
-
-
 
   // ─── 通知方法（冷却管理 + 玩家消息）─────────────────────────
 
@@ -535,11 +560,12 @@ export class SorterEngine {
     if (cooldownActive) return;
 
     this.warningCooldowns.set(key, system.currentTick);
-    const list = details.length > 0
-      ? details.map((c, i) => `#${i + 1}-${c.id}(${c.pct}%)`).join(" ")
-      : "（无）";
+    const list = details.length > 0 ? details.map((c, i) => `#${i + 1}-${c.id}(${c.pct}%)`).join(" ") : "（无）";
     const pct = Math.round((totalUsed / totalSlots) * 100);
-    this.sendWarnToNearby(warehouse, `仓库 ${warehouse.displayName} 类型:${levelLabel} 物品:${typeId} 组容量:${pct}% 容器:${list} 已达阈值`);
+    this.sendWarnToNearby(
+      warehouse,
+      `仓库 ${warehouse.displayName} 类型:${levelLabel} 物品:${typeId} 组容量:${pct}% 容器:${list} 已达阈值`
+    );
   }
 
   private warnStorageFull(warehouse: WarehouseData, typeId: string, fromLevel: string, toLevel: string): void {
@@ -563,10 +589,12 @@ export class SorterEngine {
       for (const p of world.getPlayers()) {
         if (p.dimension.id !== warehouse.dimensionId) continue;
         if (isNearAreaXZ({ x: p.location.x, z: p.location.z }, warehouse.area, 8)) {
-          try { p.sendMessage(`§c[仓库]§r ${message}`); } catch { }
+          try {
+            p.sendMessage(`§c[仓库]§r ${message}`);
+          } catch {}
         }
       }
-    } catch { }
+    } catch {}
   }
 
   private sendInfoToNearby(warehouse: WarehouseData, message: string): void {
@@ -574,10 +602,12 @@ export class SorterEngine {
       for (const p of world.getPlayers()) {
         if (p.dimension.id !== warehouse.dimensionId) continue;
         if (isNearAreaXZ({ x: p.location.x, z: p.location.z }, warehouse.area, 8)) {
-          try { p.sendMessage(`§a[仓库]§r ${message}`); } catch { }
+          try {
+            p.sendMessage(`§a[仓库]§r ${message}`);
+          } catch {}
         }
       }
-    } catch { }
+    } catch {}
   }
 
   private trySetIdle(warehouse: WarehouseData, model: WarehouseRuntimeModel): void {
@@ -594,7 +624,6 @@ export class SorterEngine {
     log.info(`仓库 ${warehouse.id} 分拣完成`);
     this.sendInfoToNearby(warehouse, "§a仓库分拣完成");
   }
-
 
   // ─── 工具方法 ──────────────────────────────────────────────────
 

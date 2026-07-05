@@ -73,7 +73,7 @@ export class SortingScheduler {
   private masterHandle: number | undefined;
 
   // ── 活跃仓库状态 ──
-  private readonly intervals = new Map<WarehouseId, number>();   // ID → runInterval handle
+  private readonly intervals = new Map<WarehouseId, number>(); // ID → runInterval handle
   private readonly lastActiveTick = new Map<WarehouseId, number>();
 
   // ── 玩家缓存 ──
@@ -81,8 +81,8 @@ export class SortingScheduler {
 
   // ── 轻量仓库缓存 ──
   private warehouseCache = new Map<WarehouseId, WarehouseAreaInfo>();
-  private cacheVersion = 0;  // 仓库数据变化时递增，触发缓存刷新
-  private lastCacheLoad = -1;    // 上一次加载缓存的版本号
+  private cacheVersion = 0; // 仓库数据变化时递增，触发缓存刷新
+  private lastCacheLoad = -1; // 上一次加载缓存的版本号
 
   // ── 通知 ──
   private readonly lastVisitor = new Map<WarehouseId, string>();
@@ -137,7 +137,10 @@ export class SortingScheduler {
     for (const p of world.getPlayers()) {
       const dim = p.dimension.id;
       let list = this.playerCache.get(dim);
-      if (!list) { list = []; this.playerCache.set(dim, list); }
+      if (!list) {
+        list = [];
+        this.playerCache.set(dim, list);
+      }
       list.push({ x: p.location.x, z: p.location.z });
     }
   }
@@ -190,10 +193,13 @@ export class SortingScheduler {
       if (nearPlayer) {
         this.lastActiveTick.set(id, now);
         // 记录访客
-        const visitor = world.getPlayers().find(p =>
-          p.dimension.id === info.dimensionId
-          && isNearAreaXZ({ x: p.location.x, z: p.location.z }, info.area, PROXIMITY_MARGIN)
-        );
+        const visitor = world
+          .getPlayers()
+          .find(
+            (p) =>
+              p.dimension.id === info.dimensionId &&
+              isNearAreaXZ({ x: p.location.x, z: p.location.z }, info.area, PROXIMITY_MARGIN)
+          );
         if (visitor) this.lastVisitor.set(id, visitor.id);
 
         if (!isActive) {
@@ -213,7 +219,7 @@ export class SortingScheduler {
   private hasNearbyPlayer(dimensionId: string, area: WarehouseArea): boolean {
     const players = this.playerCache.get(dimensionId);
     if (!players) return false;
-    return players.some(p => isNearAreaXZ(p, area, PROXIMITY_MARGIN));
+    return players.some((p) => isNearAreaXZ(p, area, PROXIMITY_MARGIN));
   }
 
   // ─── 激活/停用 ──────────────────────────────────────────────
@@ -249,7 +255,6 @@ export class SortingScheduler {
     this.lastActiveTick.delete(id);
     this.engine.releaseRuntime(id);
 
-    const info = this.warehouseCache.get(id);
     this.messageLastVisitor(id, `§7仓库 §e${id}§7 已休眠`);
     this.lastVisitor.delete(id);
   }
@@ -280,7 +285,11 @@ export class SortingScheduler {
     if (!visitorId) return;
     for (const p of world.getPlayers()) {
       if (p.id !== visitorId) continue;
-      try { p.sendMessage(message); } catch { /* 忽略 */ }
+      try {
+        p.sendMessage(message);
+      } catch {
+        /* 忽略 */
+      }
       break;
     }
   }

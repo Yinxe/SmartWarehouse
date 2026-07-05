@@ -36,11 +36,7 @@ export function areaVolume(area: WarehouseArea): number {
  *
  * 以仓库水平中心为圆心，半对角线 + 余量作为检测半径。
  */
-export function isNearAreaXZ(
-  point: { x: number; z: number },
-  area: WarehouseArea,
-  margin: number
-): boolean {
+export function isNearAreaXZ(point: { x: number; z: number }, area: WarehouseArea, margin: number): boolean {
   const cx = (area.min.x + area.max.x) / 2;
   const cz = (area.min.z + area.max.z) / 2;
   const hw = (area.max.x - area.min.x) / 2;

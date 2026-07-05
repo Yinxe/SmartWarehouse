@@ -34,14 +34,13 @@ const scheduler = new SortingScheduler(repository, engine);
 const boundaryDisplay = new BoundaryDisplay(configStore);
 
 // 核心业务服务层：负责仓库创建、删除、容器扫描等业务逻辑。
-// 第三个参数为脏标记回调函数：当仓库数据发生变更时通知运行时标记为脏（dirty），
+// 第一个回调为脏标记回调函数：当仓库数据发生变更时通知运行时标记为脏（dirty），
 // 以便后续按需重建运行时索引。
-// 第四个参数为调度刷新回调：当仓库启用/禁用/速度变化/删除时通知调度器刷新 interval。
-// 第五个参数为边界显示实例：showBoundary 开关变化时自动启停粒子渲染。
+// 第二个回调为调度刷新回调：当仓库启用/禁用/速度变化/删除时通知调度器刷新 interval。
+// 第三个参数为边界显示实例：showBoundary 开关变化时自动启停粒子渲染。
 const service = new WarehouseService(
   repository,
   configStore,
-  undefined,
   (id) => { runtime.markDirty(id); scheduler.markCacheDirty(); },
   (id) => { scheduler.refreshOne(id); scheduler.markCacheDirty(); },
   boundaryDisplay

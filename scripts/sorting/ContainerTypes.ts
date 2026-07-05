@@ -65,11 +65,7 @@ export function isDoubleChestSize(containerSize: number): boolean {
  * 判断容器角色是否需要强制锁定。
  * 漏斗始终为 input 角色，不可改为存储角色。
  */
-export function getForcedRole(
-  blockTypeId: string,
-  existingRole: string | undefined,
-  defaultRole: string
-): string {
+export function getForcedRole(blockTypeId: string, existingRole: string | undefined, defaultRole: string): string {
   if (isHopperType(blockTypeId)) return "input";
   return existingRole ?? defaultRole;
 }

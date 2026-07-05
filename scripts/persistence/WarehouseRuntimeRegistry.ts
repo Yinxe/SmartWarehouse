@@ -4,9 +4,7 @@ import { buildWarehouseRuntimeModel, type WarehouseRuntimeModel } from "../wareh
 export class WarehouseRuntimeRegistry {
   private readonly models = new Map<WarehouseId, WarehouseRuntimeModel>();
 
-  constructor(
-    private readonly loadWarehouse: (id: WarehouseId) => WarehouseData | undefined
-  ) {}
+  constructor(private readonly loadWarehouse: (id: WarehouseId) => WarehouseData | undefined) {}
 
   getOrBuild(id: WarehouseId): WarehouseRuntimeModel | undefined {
     const existing = this.models.get(id);

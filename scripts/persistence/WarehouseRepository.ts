@@ -272,9 +272,7 @@ export class WarehouseRepository {
         this.delete(data.id);
       } catch (deleteError) {
         // 回滚本身也可能失败，此时记录错误但继续抛出原始异常
-        console.error(
-          `[SmartWarehouse] 创建仓库 ${data.id} 失败后回滚也失败: ${deleteError}`
-        );
+        console.error(`[SmartWarehouse] 创建仓库 ${data.id} 失败后回滚也失败: ${deleteError}`);
       }
       throw error; // 始终抛出原始异常
     }

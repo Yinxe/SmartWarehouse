@@ -45,11 +45,9 @@ interface FormField {
 export class ModalFormBuilder {
   private form = new ModalFormData();
   private fields: FormField[] = [];
-  private titleText = "";
 
   /** 设置表单标题 */
   title(text: string): this {
-    this.titleText = text;
     this.form.title(text);
     return this;
   }
@@ -62,24 +60,14 @@ export class ModalFormBuilder {
   }
 
   /** 添加文本输入框 */
-  textField(
-    name: string,
-    label: string,
-    placeholder?: string,
-    opts?: { defaultValue?: string }
-  ): this {
+  textField(name: string, label: string, placeholder?: string, opts?: { defaultValue?: string }): this {
     this.form.textField(label, placeholder ?? "", opts);
     this.fields.push({ type: "textField", name });
     return this;
   }
 
   /** 添加下拉选择框 */
-  dropdown(
-    name: string,
-    label: string,
-    options: string[],
-    opts?: { defaultValueIndex?: number }
-  ): this {
+  dropdown(name: string, label: string, options: string[], opts?: { defaultValueIndex?: number }): this {
     this.form.dropdown(label, options, opts);
     this.fields.push({ type: "dropdown", name });
     return this;

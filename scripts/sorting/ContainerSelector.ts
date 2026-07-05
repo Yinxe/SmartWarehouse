@@ -16,31 +16,21 @@
 import { Container, Dimension, ItemStack } from "@minecraft/server";
 import type { ContainerId, WarehouseData, WarehouseRuntimeModel } from "../types";
 import { getFamily, getFamilyById } from "../data/ItemFamilies";
-import { WarehouseRuntimeRegistry } from "../persistence/WarehouseRuntimeRegistry";
 import { Logger } from "../util/Logger";
 import { playSortEffect } from "./effect/SortEffects";
 import { SlotOrganizer } from "./io/SlotOrganizer";
 import { MoveJournal } from "./io/MoveJournal";
 import {
-    getBulkChestFirstType,
-    getContainerFromStored,
-    tryMoveStackIntoContainer,
-    tryMoveStackIntoContainerWithJournal
+  getContainerFromStored,
+  tryMoveStackIntoContainer,
+  tryMoveStackIntoContainerWithJournal,
 } from "./io/ContainerAccess";
-import {
-    containerHasType,
-    getFamilyPurity,
-    isContainerEmpty,
-} from "./algorithm/ContainerView";
-import { sortByPurityDescending, type ScoredContainer } from "./algorithm/PurityRanking";
+import { containerHasType, getFamilyPurity, isContainerEmpty } from "./algorithm/ContainerView";
 
 const log = new Logger("ContainerSelector");
 
 export class ContainerSelector {
-  constructor(
-    private readonly runtime: WarehouseRuntimeRegistry,
-    private readonly organizer?: SlotOrganizer
-  ) {}
+  constructor(private readonly organizer?: SlotOrganizer) {}
 
   // ═══════════════════════════════════════════════════════════════
   // 尝试将物品放入候选容器
@@ -90,7 +80,9 @@ export class ContainerSelector {
             purityLog = ` (纯度${(purity * 100).toFixed(0)}%)`;
           }
         }
-        log.info(`[${tag ?? "?"}]${purityLog} ${stack.typeId} x${placed} → ${containerId} (角色=${stored.role}) @ (${loc.x},${loc.y},${loc.z})`);
+        log.info(
+          `[${tag ?? "?"}]${purityLog} ${stack.typeId} x${placed} → ${containerId} (角色=${stored.role}) @ (${loc.x},${loc.y},${loc.z})`
+        );
         this.addToTypeIndex(model, stack.typeId, containerId);
 
         const placedFamily = getFamily(stack.typeId);
@@ -116,7 +108,6 @@ export class ContainerSelector {
     stack: ItemStack | undefined,
     containerIds: ContainerId[],
     warehouse: WarehouseData,
-    model: WarehouseRuntimeModel,
     dimension: Dimension,
     journal: MoveJournal
   ): { remaining: ItemStack | undefined; modifiedIds: Set<ContainerId> } {
@@ -178,7 +169,6 @@ export class ContainerSelector {
       hasIndexEntry,
       hasIndexEntry ? model.itemTypeIndex.get(typeId)! : model.normalContainerIds,
       warehouse,
-      model,
       typeId,
       dimension
     );
@@ -208,7 +198,6 @@ export class ContainerSelector {
     hasIndexEntry: boolean,
     candidates: ContainerId[],
     warehouse: WarehouseData,
-    model: WarehouseRuntimeModel,
     typeId: string,
     dimension: Dimension
   ): { valid: ContainerId[]; stale: Set<ContainerId> } {

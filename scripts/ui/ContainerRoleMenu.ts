@@ -5,7 +5,6 @@ import { canManageWarehouse } from "../player/PlayerAuth";
 import { SlotOrganizer } from "../sorting/io/SlotOrganizer";
 import { formatOrganizeResult } from "../ui/OrganizeFormatter";
 import type { WarehouseService } from "../warehouse/WarehouseService";
-import { getFamilyPurity } from "../sorting/algorithm/ContainerView";
 import { getContainerFromStored } from "../sorting/io/ContainerAccess";
 import { getFamilyById } from "../data/ItemFamilies";
 import { formatContainerCapacityLine, setContainerStats, CAPACITY_WARNING_THRESHOLD } from "./WarehouseStats";
@@ -20,7 +19,7 @@ interface ContainerDetails {
   usedSlots: number;
   totalItems: number;
   uniqueTypes: number;
-  messiness?: { total: number; order: number; stack: number; };
+  messiness?: { total: number; order: number; stack: number };
 }
 
 /**
@@ -51,7 +50,9 @@ function getContainerDetails(warehouse: WarehouseData, container: StoredContaine
           totalItems += stack.amount;
           uniqueTypesSet.add(stack.typeId);
         }
-      } catch { /* 跳过 */ }
+      } catch {
+        /* 跳过 */
+      }
     }
 
     // 计算混乱度
@@ -62,34 +63,6 @@ function getContainerDetails(warehouse: WarehouseData, container: StoredContaine
   } catch {
     return undefined;
   }
-}
-
-/**
- * 格式化容器详情文本行（含混乱度）。
- */
-/**
- * 格式化容器概要信息。
- * 返回多行文本：类型行 + 容量行 + 混乱度行。
- */
-function formatContainerSummary(details: ContainerDetails | undefined): string {
-  if (!details) return "§8类型: §7容器不可达";
-  const lines: string[] = [];
-
-  // 类型
-  lines.push(`§7类型: §f${details.blockType}`);
-
-  // 容量（由 formatContainerCapacityLine 生成）
-  // 该函数调用在外部
-
-  // 混乱度
-  if (details.messiness) {
-    const m = details.messiness;
-    lines.push(
-      `§7混乱度: §f${(m.total * 100).toFixed(0)}%§7[sort:§e${(m.order * 100).toFixed(0)}%§7 , stack:§e${(m.stack * 100).toFixed(0)}%§7]`
-    );
-  }
-
-  return lines.join("\n");
 }
 
 /**
@@ -215,10 +188,7 @@ export async function showContainerRoleMenu(
     // ── 非管理员玩家：只读查看容器信息 ──
     await new ActionFormBuilder()
       .title("容器信息")
-      .body(infoHeader(
-        container.enabled ? "§a" : "§c",
-        container.enabled ? "已启用" : "已禁用"
-      ))
+      .body(infoHeader(container.enabled ? "§a" : "§c", container.enabled ? "已启用" : "已禁用"))
       .button("关闭") // no callback, just closes
       .show(player);
     return;
@@ -230,10 +200,7 @@ export async function showContainerRoleMenu(
 
   const form = new ModalFormBuilder()
     .title("容器设置")
-    .label("info", infoHeader(
-      container.enabled ? "§a" : "§c",
-      container.enabled ? "已启用" : "已禁用"
-    ))
+    .label("info", infoHeader(container.enabled ? "§a" : "§c", container.enabled ? "已启用" : "已禁用"))
     .toggle("enabled", "启用容器", { defaultValue: container.enabled });
 
   if (isHopper) {
@@ -248,7 +215,7 @@ export async function showContainerRoleMenu(
   if (!vals) return;
 
   const newEnabled = vals.enabled as boolean;
-  const newRole: ContainerRole = isHopper ? "input" : ROLE_ORDER[vals.role as number] ?? container.role;
+  const newRole: ContainerRole = isHopper ? "input" : (ROLE_ORDER[vals.role as number] ?? container.role);
   const shouldOrganize = vals.organize as boolean;
 
   // ── 整理容器 ──
@@ -278,10 +245,7 @@ export async function showContainerRoleMenu(
   // ── 提交角色和状态变更 ──
   try {
     service.setContainerRoleAndState(warehouse.id, containerId, newRole, newEnabled);
-    player.sendMessage(
-      `§a容器已更新：${newEnabled ? "启用" : "禁用"}，` +
-      `角色=${ROLE_LABELS[newRole]}`
-    );
+    player.sendMessage(`§a容器已更新：${newEnabled ? "启用" : "禁用"}，` + `角色=${ROLE_LABELS[newRole]}`);
 
     // 如果角色改为大宗，引导玩家手动放入物品来设定类型
     if (newRole === "bulk") {

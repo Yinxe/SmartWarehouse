@@ -21,7 +21,10 @@ export function triggerQuickOrganize(player: Player, block: import("@minecraft/s
     system.run(() => {
       try {
         const inv = block.getComponent("inventory")?.container;
-        if (!inv) { player.sendMessage("§c无法获取容器"); return; }
+        if (!inv) {
+          player.sendMessage("§c无法获取容器");
+          return;
+        }
         const result = organizer.organize(inv);
         const name = block.typeId.replace("minecraft:", "");
         for (const line of formatOrganizeResult(result, name)) player.sendMessage(line);
@@ -35,7 +38,10 @@ export function triggerQuickOrganize(player: Player, block: import("@minecraft/s
       try {
         const invComp = player.getComponent("inventory") as
           { container: import("@minecraft/server").Container } | undefined;
-        if (!invComp?.container) { player.sendMessage("§c无法获取背包容器"); return; }
+        if (!invComp?.container) {
+          player.sendMessage("§c无法获取背包容器");
+          return;
+        }
         const analysis = organizer.analyze(invComp.container, { startSlot: 9, endSlot: 36 });
         const result = organizer.apply(invComp.container, analysis);
         for (const line of formatOrganizeResult(result, "背包")) player.sendMessage(line);

@@ -1,80 +1,199 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+---
+
+## 常用命令
+
+```bash
+# 安装依赖
+npm install
+
+# 构建（TypeScript 编译 + esbuild 打包）
+npm run build
+
+# 仅 TypeScript 编译（检查类型错误，不输出产物）
+npx tsc --noEmit
+
+# 仅编译（无打包）
+npx tsc
+
+# Lint
+npm run lint
+
+# 运行所有单元测试（vitest，排除 tests/safety/）
+npx vitest run
+
+# 运行特定模块的测试
+npx vitest run tests/sorting                # 分拣算法测试
+npx vitest run tests/application            # 应用层测试
+npx vitest run tests/integration            # 集成测试
+
+# 运行安全测试（模拟 Minecraft 容器 IO，需要 node 环境）
+node tests/run-safety-tests.mjs
+
+# 一键打包 .mcaddon
+npm run mcaddon               # 产物在 dist/packages/
+
+# 本地热部署（监听文件变化，自动编译+复制到行为包）
+npm run local-deploy          # 需要 .env 中配置的行为包路径
+```
+
+**注意**：该项目的 Minecraft 模组构建使用 `just-scripts` + `@minecraft/core-build-tasks`（见 `just.config.ts`），而非纯 tsc。
+
+---
+
 ## 参考文档
 
-### 官方 API 文档（微软）
-https://learn.microsoft.com/zh-cn/minecraft/creator/?view=minecraft-bedrock-stable
-重点章节：
-- Script API（@minecraft/server）
+- **官方 API**: https://learn.microsoft.com/zh-cn/minecraft/creator/?view=minecraft-bedrock-stable
+- **Script API (@minecraft/server)**: 上述链接重点章节
+- **社区 Wiki**: https://wiki.bedrock.dev/（自定义物品/方块/Molang/动画…）
+- **翻译表**: https://raw.githubusercontent.com/SkyEye-FAST/mcbe-chinese-patch/main/extracted/release/vanilla/zh_CN.json
 
-### 社区 WIKI 教程
-https://wiki.bedrock.dev/
-涵盖：自定义物品、方块、实体、Molang、动画控制器、UI、粒子等。
+---
 
-### 全wiki中文翻译表
-https://raw.githubusercontent.com/SkyEye-FAST/mcbe-chinese-patch/main/extracted/release/vanilla/zh_CN.json
+## 项目架构（扁平多模块）
+
+```
+scripts/
+├── main.ts              入口：依赖注入、注册事件和命令
+├── types.ts             集中式类型定义（re-export 汇集点）
+├── commands/            命令路由 + 参数解析 + 权限校验
+│   ├── CommandRouter.ts
+│   ├── handlers/        create/resize/delete/organize/menu/search
+│   └── validators/      ParameterParser.ts + PermissionValidator.ts
+├── data/                静态数据文件
+│   ├── ItemFamilies.ts  51 家族 / 1431 物品分类
+│   └── name-maps/       中文译名映射（按物品类型分文件）
+├── persistence/         持久化层（Minecraft Dynamic Property）
+│   ├── WarehouseRepository.ts    仓库数据读写
+│   ├── DynamicPropertyStore.ts   底层 DP 序列化
+│   ├── ModConfigStore.ts         模组配置
+│   ├── WarehouseRuntimeRegistry.ts  运行时缓存索引
+│   └── WarehouseStatsStore.ts    统计缓存
+├── player/              玩家交互事件层
+│   ├── ToolInteractionController.ts  木锄右键事件
+│   ├── containerClickHandler.ts      容器点击
+│   ├── nonContainerClickHandler.ts   非容器方块点击
+│   ├── quickOrganizeHandler.ts      一键整理
+│   └── SelectionSessionStore.ts     选区状态管理
+├── sorting/             分拣引擎与调度
+│   ├── SorterEngine.ts       核心分拣引擎
+│   ├── SortingScheduler.ts   轮询调度器
+│   ├── ContainerSelector.ts  容器选择策略
+│   ├── ContainerTypes.ts     容器类型判断
+│   ├── algorithm/       分拣算法（领域层，纯逻辑可单元测试）
+│   │   ├── SortingPolicy.ts       分拣策略编排
+│   │   ├── FamilyPurity.ts        同类物品纯度计算
+│   │   ├── CapacityCheck.ts       剩余容量检测
+│   │   ├── IndexSelfHealing.ts    索引自愈
+│   │   ├── MessinessScore.ts      混乱度评分
+│   │   ├── PurityRanking.ts       纯度排序
+│   │   ├── ContainerView.ts       容器视图接口
+│   │   └── ContainerInventory.ts  物品清单值对象
+│   ├── io/              Minecraft 容器 IO 适配器
+│   │   ├── ContainerAccess.ts     容器访问接口
+│   │   ├── ContainerSnapshot.ts   快照与回滚
+│   │   ├── MoveJournal.ts         物品移动日志
+│   │   └── SlotOrganizer.ts       槽位整理器
+│   └── effect/          分拣效果（粒子、声音、通知）
+│       ├── SortEffects.ts
+│       └── WarehouseNotifier.ts
+├── ui/                  玩家交互界面（ActionForm / ModalForm）
+│   ├── MainMenu.ts, WarehouseCreateFlow.ts, WarehouseManageMenu.ts
+│   ├── WarehouseSettingsMenu.ts, ContainerRoleMenu.ts, FamilyConfigMenu.ts
+│   ├── WarehouseStats.ts, SearchUI.ts, ConfigUI.ts
+│   ├── FormHelper.ts, Table.ts, OrganizeFormatter.ts
+│   └── OrganizeTypes.ts
+├── util/                工具函数
+│   ├── Logger.ts, Vector.ts, Json.ts, errors.ts
+├── warehouse/           核心业务逻辑
+│   ├── WarehouseService.ts      仓库 CRUD + 方块事件维护
+│   ├── WarehouseStatsService.ts 统计计算
+│   ├── WarehouseRescanDiff.ts   重扫差异比较
+│   ├── ContainerId.ts           ID 生成
+│   ├── ContainerTypes.ts        容器类型检查
+│   └── WarehouseTypes.ts, WarehouseRuntimeModel.ts, ContainerTypes.ts
+│   ├── render/          BoundaryDisplay.ts 粒子光幕渲染
+│   ├── scanner/         ContainerScanner.ts + SafeProbe.ts
+│   └── search/          SearchService.ts
+tests/
+├── sorting/             分拣算法单元测试（vitest）
+├── application/         应用层测试（权限校验等）
+├── integration/         集成测试（仓库持久化兼容、端口契约）
+├── safety/              安全测试（模拟容器 IO，mock 模式）
+├── helpers/             测试工具（MockMinecraft, FakeDynamicPropertyStore, Assert）
+└── setup/               MinecraftServerMock.ts（@minecraft/server mock for vitest）
+```
+
+**构建流程**：`scripts/` → tsc 类型检查 → esbuild 打包 → `dist/scripts/main.js` → 复制到行为包目录
+
+### 分层逻辑（非 DDD，按职责分模块）
+
+| 层 | 目录 | 说明 |
+|---|---|---|
+| 输入层 | `commands/` `player/` `ui/` | 命令/交互/UI → 调用 warehouse 或 sorting |
+| 业务逻辑 | `warehouse/` `sorting/` | 仓库管理、分拣引擎、容器扫描 |
+| 算法（纯逻辑） | `sorting/algorithm/` | 零 Minecraft 依赖，可纯单元测试 |
+| 基础设施 | `persistence/` `sorting/io/` `sorting/effect/` | Minecraft 运行时适配器 |
+| 工具 | `util/` | 与业务无关的通用工具 |
+| 数据 | `data/` | 静态物品分类、译名映射 |
+
+### 初始化流程（main.ts）
+
+```
+ModConfigStore → WarehouseRepository → WarehouseRuntimeRegistry
+                → SlotOrganizer → SorterEngine → SortingScheduler
+                → WarehouseService → BoundaryDisplay
+                → registerToolInteraction → CommandRouter
+                → system.run(scheduler.start + boundaryDisplay.start)
+```
+
+### 分拣流程
+
+```
+player 放入 input 容器
+  → SortingScheduler 轮询触发
+  → SorterEngine.processWarehouse(warehouseId)
+  → ContainerSelector 选择最佳目标容器（按角色/纯度/容量）
+  → MoveJournal 记录移动，SlotOrganizer 整理
+  → SortEffects 播放粒子/声音
+```
+
+---
+
+## 测试架构
+
+项目使用 **vitest** 运行测试（配置见 `vitest.config.ts`），`@minecraft/server` 在测试环境中被 mock 替换：
+
+```typescript
+// vitest.config.ts resolve.alias
+"@minecraft/server": path.resolve(__dirname, "tests/setup/MinecraftServerMock.ts")
+```
+
+**测试分组：**
+
+| 组 | 命令 | 内容 |
+|---|---|---|
+| sorting | `vitest run tests/sorting` | 分拣算法单元测试（纯逻辑，最快） |
+| application | `vitest run tests/application` | 权限校验等应用层 |
+| integration | `vitest run tests/integration` | 持久化兼容、端口契约 |
+| safety | `node tests/run-safety-tests.mjs` | 容器 IO 安全测试（需要 node） |
+
+**测试 helper：**
+- `MockMinecraft.ts` — 工厂函数创建 mock 容器/方块/世界
+- `FakeDynamicPropertyStore.ts` — 使用 `Map` 模拟 DynamicProperty 存储
+- `Assert.ts` — 自定义断言工具（近似值比较、集合比较等）
+- `MinecraftServerMock.ts` — 全局 mock（vitest alias 注入）
+
+**注意**：safety 测试由于需要模拟 Minecraft 容器 IO 的复杂行为，不在 vitest 中运行（通过 `exclude` 排除），需要使用 `node tests/run-safety-tests.mjs` 独立执行。
 
 ---
 
 ## 代码风格与约定
 
-### 1. 技术栈
-- **语言**: TypeScript (ES6 target, strict 模式)
-- **运行时**: Minecraft Bedrock Script API (`@minecraft/server` ^2.6.0)
-- **构建**: `just-scripts` + TypeScript 编译器
-- **格式化工**具: Prettier (配置见 `.prettierrc.json`)
-- **ESLint**: `eslint-plugin-minecraft-linting`
-
-### 2. 项目结构（DDD 分层）
-```
-BP/                   行为包（manifest.json + scripts 编译产物）
-RP/                   资源包
-scripts/              TypeScript 源码
-  main.ts             入口文件（依赖注入、注册事件和命令）
-  types.ts            类型 re-export 汇集点（barrel）
-  identifiers.ts             领域层（纯业务逻辑，零 Minecraft 依赖）
-    shared/           共享值对象（Vector、Json、errors、identifiers）
-    inventory/        容器清单值对象（MessinessScore、shulker box）
-    sorting/          分拣策略（SortingPolicy、CapacityCheck、FamilyPurity、IndexSelfHealing）
-    warehouse/        仓库聚合（ContainerTypes、WarehouseTypes、ContainerId、WarehouseRuntimeModel）
-  application/        应用层（用例编排 + 端口接口）
-    ports/            端口定义（仓库仓储、容器访问、世界访问、通知、调度、统计）
-    sorting/          分拣用例（SortWarehouseUseCase、SchedulingUseCase）
-    warehouse/        仓库用例（Create/Delete/Rescan/UpdateSettings/SetContainerRole/Rename）
-  infrastructure/     基础设施层（Minecraft 运行时适配器）
-    Logger.ts         日志工具
-    PlayerAuth.ts     玩家权限校验
-    WarehouseStatsService.ts  容器统计计算与缓存
-    cache/            运行时缓存（WarehouseRuntimeRegistry）
-    persistence/      持久化（DynamicPropertyStore、ModConfigStore、WarehouseRepository、WarehouseStatsStore）
-    minecraft/        Minecraft 适配器
-      container/      容器访问（ContainerAccess、ContainerSnapshot、MoveJournal、SlotOrganizer）
-      scheduling/     分拣调度（SortingScheduler）
-      SorterEngine.ts、WarehouseService.ts、ContainerScanner.ts、SafeProbe.ts 等
-  commands/           输入层——命令路由（CommandRouter）+ Handler
-  interaction/        输入层——工具交互（木锄右键事件处理）
-  ui/                 输入层——玩家界面（ActionForm/ModalForm）+ 格式化
-  data/               数据文件（ItemFamilies、name-maps）
-tools/                维护工具（generateItemFamilies.mjs、annotateFamilies.mjs）
-```
-
-### 3. 架构分层（DDD 四层）
-```
-输入层（Input Layer）
-  commands/     ← Minecraft 命令注册 + 参数解析 + 权限校验
-  interaction/  ← 方块交互事件 + 工具处理
-  ui/           ← ActionForm/ModalForm 界面显示 + 格式化
-        ↓ 委托
-应用层（Application Layer）
-  application/ports/     ← 端口接口（解耦依赖）
-  application/*UseCase   ← 用例编排（事务+协调）
-       ↙        ↘
-领域层（Domain Layer）   基础设施层（Infrastructure Layer）
-  identifiers.ts          ←→    infrastructure/
-  纯业务逻辑              Minecraft 运行时适配器
-  零外部依赖              持久化、容器访问、粒子效果
-  可单元测试              调度器、搜索引擎
-```
-
-### 4. 命名规范
+### 命名规范
 
 | 类别 | 风格 | 示例 |
 |------|------|------|
@@ -89,68 +208,35 @@ tools/                维护工具（generateItemFamilies.mjs、annotateFamilies
 | 类型化 ID | `XxxId` 后缀 | `WarehouseId`, `ContainerId`, `DimensionId` |
 | 坐标键 | `locationKey()` 工厂 | `"dimensionId\|x\|y\|z"` 格式 |
 
-**特例：**
-- `main.ts` — 入口文件，保持小写
-- `types.ts` — 集中类型定义，保持小写
+**特例：** `main.ts`（入口）、`types.ts`（集中类型定义）保持小写。
 
-### 5. 导入规范
+### 导入规范
+
 ```typescript
 // 1. 外部依赖
 import { world, system } from "@minecraft/server";
 // 2. 仅类型导入时使用 type 关键字
 import type { Vector3 } from "@minecraft/server";
-// 3. 内部模块（相对路径）—— 按 DDD 层导入
-import { normalizeWarehouseId } from "../infrastructure/persistence/WarehouseRepository";
-import { Logger } from "../infrastructure/Logger";
-import type { WarehouseService } from "../infrastructure/minecraft/WarehouseService";
-import { computeRouteOrder } from "../domain/sorting/SortingPolicy";
-import type { CreateWarehouseUseCase } from "../application/warehouse/CreateWarehouseUseCase";
+// 3. 内部模块（相对路径）
+import { normalizeWarehouseId } from "../persistence/WarehouseRepository";
+import { Logger } from "../util/Logger";
+import type { WarehouseService } from "../warehouse/WarehouseService";
+import { computeRouteOrder } from "../sorting/algorithm/SortingPolicy";
 // 4. 同类导入可混合
 import { system, type Dimension } from "@minecraft/server";
 import { world, type Player, type CustomCommand } from "@minecraft/server";
 ```
 
-### 6. 代码文档规范
-- **JSDoc 使用中文**描述，遵循 `/** */` 格式
+### 文档注释
+
+- **JSDoc 使用中文**，遵循 `/** */` 格式
 - **每个导出函数/类**必须有 JSDoc
-- JSDoc 结构：
-  ```
-  /**
-   * 简短的一句话描述。
-   *
-   * 详细说明（多段时用空行分隔）。
-   *
-   * @param paramName - 参数描述（使用 - 分隔）
-   * @returns 返回值描述
-   * @throws 异常条件描述（仅在会抛异常时写）
-   */
-  ```
-- **复杂算法**：使用 JSDoc 的多段落 + 列表/表格描述设计思路
-- **模块头注释**（可选）：用于大文件的总结性模块说明
-  ```
-  /**
-   * ============================================================================
-   * ClassName —— 简短职责说明
-   * ============================================================================
-   *
-   * 职责概述：
-   * 1. 职责一
-   * 2. 职责二
-   * ============================================================================
-   */
-  ```
+- 结构：`@param name - 描述`（- 分隔）、`@returns`、`@throws`
+- **复杂算法**：多段落 + 列表/表格
+- **模块头注释**：可选的大文件总结
 
-### 7. 代码分段注释
-使用 `// ──` 系列进行视觉分段，形成清晰的层次结构：
-```
-// ── 生命周期管理 ───────────────────────────────────────────────
-// ─── 公开入口 ───────────────────────────────────────────────────
-// ─── 私有方法 ──────────────────────────────────────────────────
-// ─── 工具方法 ──────────────────────────────────────────────────
-```
-ASCII 分隔线长度一致，末尾对齐到列 120（与 prettier printWidth 一致）。
+### 错误处理模式
 
-### 8. 错误处理模式
 ```typescript
 // 模式 1: 返回错误消息（轻量校验，如命令解析）
 function parseCommandPlayer(origin): Player | string {
@@ -168,12 +254,7 @@ function getDimensionSafe(dimensionId): Dimension | undefined {
   try { return world.getDimension(dimensionId); } catch { return undefined; }
 }
 
-// 模式 4: 安全发送消息（玩家可能已断线）
-function trySendMessage(player: Player, message: string): void {
-  try { player.sendMessage(message); } catch { /* 静默忽略 */ }
-}
-
-// 模式 5: 事件处理器内的 try-catch（防止单个事件崩溃影响全局）
+// 模式 4: 事件处理器内的 try-catch（防止单个事件崩溃影响全局）
 world.afterEvents.playerPlaceBlock.subscribe((event) => {
   try { /* ... */ } catch (e) {
     console.warn("[SmartWarehouse] playerPlaceBlock 事件处理器错误:", e);
@@ -181,141 +262,49 @@ world.afterEvents.playerPlaceBlock.subscribe((event) => {
 });
 ```
 
-### 9. 依赖注入模式
+### 依赖注入
+
 ```typescript
-// 类使用构造函数注入，可选依赖用默认参数（方便测试时注入 mock）
+// 构造函数注入，可选依赖用默认参数（方便测试时注入 mock）
 export class WarehouseService {
   constructor(
     private readonly repository: WarehouseRepository,
-    private readonly scanner = new ContainerScanner(),     // 可注入，默认实现
+    private readonly scanner = new ContainerScanner(),  // 可注入
     private readonly markRuntimeDirty: (id: WarehouseId) => void = () => undefined
   ) {}
 }
-
-export class SortingScheduler {
-  constructor(
-    private readonly repository: WarehouseRepository,
-    private readonly engine: SorterEngine,
-    readonly maxWarehousesPerRun: number = 4  // 默认值，调用方按需修改
-  ) {}
-}
 ```
 
-### 10. 类型定义模式
+### 类型定义模式
+
 ```typescript
-// 集中式类型定义（types.ts）：所有业务类型放在一个文件中
-export type WarehouseId = string;
-export type ContainerId = string;
-export type DimensionId = string;
-
-// Union type（带中文 JSDoc 描述每个分支的用途）
+// Union type + 中文 JSDoc
 export type ContainerRole = "normal" | "misc" | "bulk" | "input";
-
-// 带中文字段的 Record 常量（用于 UI 展示）
+// Record 常量为 UI 展示
 export const ROLE_LABELS: Record<ContainerRole, string> = {
-  normal: "普通",
-  misc: "杂项",
-  bulk: "批量",
-  input: "输入",
+  normal: "普通", misc: "杂项", bulk: "批量", input: "输入",
 };
-
-// 有限字面量 union
-export type ProcessingSpeed = 4 | 8 | 16 | 20;
-
-// 接口继承
-export interface WarehouseData extends WarehouseMeta {
-  containers: Record<ContainerId, StoredContainer>;
-}
-
-// 受歧视联合（discriminated union）用于状态机
+// 受歧视联合用于状态机
 export type SelectionSession =
   | { type: "createWarehouse"; warehouseName: string; pointA?: BlockLocation }
   | { type: "resizeWarehouse"; warehouseId: WarehouseId; pointA?: BlockLocation };
-
-// 返回类型联合（解析结果的 ok/error 模式）
-type ParseResult = { ok: true; id: WarehouseId } | { ok: false; message: string };
 ```
 
-### 11. Prettier 配置（.prettierrc.json）
-```json
-{
-  "trailingComma": "es5",
-  "tabWidth": 2,
-  "semi": true,
-  "singleQuote": false,
-  "bracketSpacing": true,
-  "arrowParens": "always",
-  "printWidth": 120,
-  "endOfLine": "auto"
-}
-```
+### Minecraft 特有模式
 
-### 12. tsconfig 关键设置
-- `target: "es6"` — 输出 ES6 兼容代码
-- `module: "ES2020"` — ES 模块格式
-- `moduleResolution: "Node"`
-- `strict: true` — 全开严格模式
-- `noImplicitAny: true` — 禁止隐式 any
-- `experimentalDecorators: true` + `emitDecoratorMetadata: true` — 支持装饰器
-- `rootDir: "."`, `baseUrl: "BP/"` — 源码根目录和编译基路径
-- `outDir: "lib"` — 编译输出
-- 只编译 `scripts/**/*`
+- **事件驱动初始化**（main.ts）：脚本启动时一次性初始化所有子系统，延迟到下一 tick 启动调度（dynamicProperty 需世界完全加载后才可用）
+- **命令注册**：在 `system.beforeEvents.startup` 中通过 `event.customCommandRegistry.registerCommand` 注册
+- **区块安全访问**：`dimension.getBlock()` 用 try-catch 保护
+- **容器角色**：`input`（输入，漏斗默认）、`normal`（主存储）、`misc`（杂项）、`bulk`（大宗含潜影盒拆填）
+- **增量维护**：方块放置/破坏事件处理器增量添加/移除容器记录，不做全量扫描
 
-### 13. Minecraft 特有模式
+### 通用编码习惯
 
-**事件驱动初始化**（main.ts）：
-```typescript
-// 每次脚本重载时执行一次，一次性初始化所有子系统
-const repository = new WarehouseRepository();
-const runtime = new WarehouseRuntimeRegistry((id) => repository.load(id));
-const engine = new SorterEngine(repository, runtime, organizer);
-const scheduler = new SortingScheduler(repository, engine);
-const service = new WarehouseService(repository, configStore, undefined,
-  (id) => runtime.markDirty(id), (id) => scheduler.refreshOne(id), boundaryDisplay);
-service.registerBlockMaintenance();
-registerToolInteraction(repository, service, configStore);
-commandRouter.register();
-scheduler.start();
-```
-
-**命令注册**（CommandRouter）：
-```typescript
-// 在 system.beforeEvents.startup 中注册自定义命令
-system.beforeEvents.startup.subscribe((event) => {
-  event.customCommandRegistry.registerCommand(
-    regionCommand("sw:create", "描述"),
-    (origin, name, x1, y1, z1, x2, y2, z2) => this.handleCreate(...)
-  );
-});
-```
-
-**UI 交互**（ActionForm / ModalForm）：
-```typescript
-// UI 使用 @minecraft/server-ui 的 ActionFormData / ModalFormData
-const form = new ActionFormData()
-  .title("标题")
-  .body("内容")
-  .button("按钮");
-const response = await form.show(player);
-```
-
-**区块安全访问**：
-```typescript
-// 任何方块/容器访问都必须用 try-catch 保护
-function tryGetBlock(dimension: Dimension, location: BlockLocation): Block | undefined {
-  try { return dimension.getBlock(location); } catch { return undefined; }
-}
-```
-
-### 14. 通用编码习惯
-
-- **`private readonly`** 构造参数简写：`constructor(private readonly dep: Type)`
-- **Map 类型**显式声明泛型：`new Map<string, ContainerId[]>()`
-- **Record 类型**用于对象字典：`Record<ContainerId, StoredContainer>`
-- **`.filter(Boolean)`** 风格使用类型守卫：`.filter((w): w is WarehouseData => Boolean(w))`
-- **异步 UI**：UI 相关方法用 `async` / `await`（ActionForm.show 返回 Promise）
-- **同步业务逻辑**：WarehouseService 的方法同步执行（Minecraft Script API 在同一 tick 内同步）
-- **幂等方法**：`start()` / `stop()` 等生命周期方法必须是幂等的
-- **错误消息语言**：面向玩家的错误消息使用中文；调试日志使用英文
-- **日志格式**：`[前缀] 消息`，通过 `Logger` 类统一输出，底层使用 `console.warn`
-- **常量就近定义**：模块级常量定义在使用位置附近（非集中式 constants 文件）
+- `private readonly` 构造参数简写
+- `Map<K, V>` 显式声明泛型
+- `Record<K, V>` 用于对象字典
+- UI 相关方法用 `async/await`；业务逻辑同步执行
+- 分拣相关方法必须是**幂等**的（`start()` / `stop()`）
+- 面向玩家的错误消息使用中文；调试日志使用英文
+- 日志通过 `Logger` 类统一输出，底层使用 `console.warn`，格式 `[SmartWarehouse] 消息`
+- 模块级常量就近定义（不集中放 constants 文件）

@@ -1,5 +1,5 @@
-import { world, system, type Dimension, type Player } from "@minecraft/server";
-import type { WarehouseId, WarehouseArea, DimensionId, WarehouseData } from "../../types";
+import { world, system, type Dimension } from "@minecraft/server";
+import type { WarehouseId, WarehouseArea, DimensionId } from "../../types";
 import { Logger } from "../../util/Logger";
 import { isNearAreaXZ } from "../../util/Vector";
 import type { ModConfigStore } from "../../persistence/ModConfigStore";
@@ -145,7 +145,7 @@ export class BoundaryDisplay {
         const testBlock = dimension.getBlock({ x: min.x, y: min.y, z: min.z });
         if (!testBlock) return;
         // 访问 permutation 确认区块真正加载
-        const _ = testBlock.permutation;
+        void testBlock.permutation;
       } catch { return; }
 
       // ── 玩家接近检查（每 20 tick 刷新缓存） ──

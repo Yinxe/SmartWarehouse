@@ -6,7 +6,7 @@
  */
 
 import { system } from "@minecraft/server";
-import type { Player } from "@minecraft/server"
+import type { Player } from "@minecraft/server";
 import type { BlockLocation } from "../types";
 import type { WarehouseService } from "../warehouse/WarehouseService";
 import { getSession, setSession, clearSession } from "./SelectionSessionStore";
@@ -40,10 +40,17 @@ export function handleNonContainerClick(
     system.runTimeout(() => {
       try {
         const result = service.createWarehouse(
-          warehouseName, dimensionId, pointA, pointB,
-          defaultNewContainerRole, defaultNewContainerEnabled, player.id
+          warehouseName,
+          dimensionId,
+          pointA,
+          pointB,
+          defaultNewContainerRole,
+          defaultNewContainerEnabled,
+          player.id
         );
-        player.sendMessage(`§a仓库 "${result.displayName}" 创建成功！共发现 ${Object.keys(result.containers).length} 个容器`);
+        player.sendMessage(
+          `§a仓库 "${result.displayName}" 创建成功！共发现 ${Object.keys(result.containers).length} 个容器`
+        );
       } catch (error) {
         player.sendMessage(`§c操作失败: ${error}，请重新开始`);
       }
@@ -55,7 +62,9 @@ export function handleNonContainerClick(
     system.runTimeout(() => {
       try {
         const result = service.resizeWarehouse(warehouseId, pointA, pointB);
-        player.sendMessage(`§a仓库 "${result.displayName}" 调整成功！共发现 ${Object.keys(result.containers).length} 个容器`);
+        player.sendMessage(
+          `§a仓库 "${result.displayName}" 调整成功！共发现 ${Object.keys(result.containers).length} 个容器`
+        );
       } catch (error) {
         player.sendMessage(`§c操作失败: ${error}，请重新开始`);
       }

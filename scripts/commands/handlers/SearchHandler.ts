@@ -10,7 +10,6 @@ import type { WarehouseRepository } from "../../persistence/WarehouseRepository"
 import { canManageWarehouse } from "../../player/PlayerAuth";
 import { isNearAreaXZ } from "../../util/Vector";
 import { parseCommandPlayer, trySendMessage, success, failure } from "../validators/PermissionValidator";
-import { parseWarehouseId } from "../validators/ParameterParser";
 import type { Player } from "@minecraft/server";
 import type { WarehouseArea } from "../../types";
 

@@ -10,11 +10,14 @@ import type {
   WarehouseSettings,
 } from "../types";
 import { toBlockLocation, ROLE_LABELS } from "../types";
-import { DEFAULT_WAREHOUSE_SETTINGS, normalizeWarehouseId, WarehouseRepository } from "../persistence/WarehouseRepository";
+import {
+  DEFAULT_WAREHOUSE_SETTINGS,
+  normalizeWarehouseId,
+  WarehouseRepository,
+} from "../persistence/WarehouseRepository";
 import { areaVolume, areasTooClose, isInsideArea, normalizeArea } from "../util/Vector";
 import { ContainerScanner } from "./scanner/ContainerScanner";
 import { isHopperType, isSupportedContainerType } from "../sorting/ContainerTypes";
-import { hasInventory } from "./ContainerTypes";
 import { makeContainerId } from "../warehouse/ContainerId";
 import { compareLocationForPrimary } from "../util/Vector";
 import { BoundaryDisplay } from "./render/BoundaryDisplay";
@@ -30,7 +33,6 @@ import type { ModConfigStore } from "../persistence/ModConfigStore";
 const MIN_WAREHOUSE_SPACING = 4;
 
 /** 默认单仓库最大边长（各轴向均不超过此值，仅在配置加载失败时使用）。 */
-const FALLBACK_EDGE_LENGTH = 32;
 
 /**
  * 仓库服务（WarehouseService）
@@ -45,9 +47,10 @@ const FALLBACK_EDGE_LENGTH = 32;
  * 脏标记回调（markRuntimeDirty）用于通知运行时缓存失效。
  */
 export class WarehouseService {
+  private readonly scanner = new ContainerScanner();
+
   /**
    * @param repository          仓库数据的持久化存储仓库
-   * @param scanner             容器扫描器（可注入，便于测试）
    * @param markRuntimeDirty    脏标记回调函数，仓库数据变更时调用以通知运行时缓存失效
    * @param notifyScheduler     调度刷新回调，仓库启用/禁用/速度变化/删除时通知调度器刷新 interval
    * @param boundaryDisplay     边界显示调度器（可选）
@@ -55,7 +58,6 @@ export class WarehouseService {
   constructor(
     private readonly repository: WarehouseRepository,
     private readonly configStore: ModConfigStore,
-    private readonly scanner = new ContainerScanner(),
     private readonly markRuntimeDirty: (warehouseId: WarehouseId) => void = () => undefined,
     private readonly notifyScheduler?: (warehouseId: WarehouseId) => void,
     private readonly boundaryDisplay?: BoundaryDisplay

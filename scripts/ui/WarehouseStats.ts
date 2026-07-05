@@ -7,7 +7,7 @@
 
 import { Table, Cell } from "./Table";
 import { CAPACITY_WARNING_THRESHOLD } from "../sorting/algorithm/CapacityWarning";
-import type { WarehouseStats, RoleStats } from "../warehouse/WarehouseStatsService";
+import type { WarehouseStats } from "../warehouse/WarehouseStatsService";
 
 // 为兼容旧导入路径重新导出基础函数
 export { CAPACITY_WARNING_THRESHOLD } from "../sorting/algorithm/CapacityWarning";
@@ -37,7 +37,7 @@ export type { WarehouseStats, RoleStats } from "../warehouse/WarehouseStatsServi
  *   Family:54
  */
 export function formatWarehouseStats(stats: WarehouseStats): string {
-  const uc = (p: number) => p >= 100 ? "§c" : p >= 80 ? "§e" : p >= 50 ? "§6" : "§a";
+  const uc = (p: number) => (p >= 100 ? "§c" : p >= 80 ? "§e" : p >= 50 ? "§6" : "§a");
   const warnThreshold = CAPACITY_WARNING_THRESHOLD * 100;
   const tbl = new Table();
 
@@ -54,8 +54,10 @@ export function formatWarehouseStats(stats: WarehouseStats): string {
   );
 
   const defs: { r: string; c: string; l: string }[] = [
-    { r: "bulk", c: "§b", l: "Bulk" }, { r: "normal", c: "§a", l: "Normal" },
-    { r: "misc", c: "§d", l: "Misc" }, { r: "input", c: "§6", l: "Input" },
+    { r: "bulk", c: "§b", l: "Bulk" },
+    { r: "normal", c: "§a", l: "Normal" },
+    { r: "misc", c: "§d", l: "Misc" },
+    { r: "input", c: "§6", l: "Input" },
   ];
   for (const { r, c, l } of defs) {
     const rs = stats.byRole[r];
@@ -67,8 +69,8 @@ export function formatWarehouseStats(stats: WarehouseStats): string {
       `${c}${l}(${rs.containerCount})`,
       Cell.right(String(rs.uniqueTypes)),
       Cell.right(String(rs.totalItems)),
-      Cell.left(`${c}${rs.usedSlots}§7/${c}${rs.totalSlots}§7${uc(p)}${ratio}§7${warn}`
-    ));
+      Cell.left(`${c}${rs.usedSlots}§7/${c}${rs.totalSlots}§7${uc(p)}${ratio}§7${warn}`)
+    );
   }
 
   const lines = [`§7仓库 : ${stats.displayName}`, tbl.render(0, [1, 1, 3])];
