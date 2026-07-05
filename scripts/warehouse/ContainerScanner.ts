@@ -1,8 +1,8 @@
 import type { Block, Dimension } from "@minecraft/server";
 import type { BlockLocation, ContainerId, ContainerRole, StoredContainer, WarehouseArea } from "../types";
-import { compareLocationForPrimary } from "../lib/Vector";
-import { makeContainerId } from "../lib/ContainerId";
-import { isChestType, isHopperType, isSupportedContainerType } from "../lib/ContainerTypes";
+import { compareLocationForPrimary } from "../warehouse/Vector";
+import { makeContainerId } from "../warehouse/ContainerId";
+import { isChestType, isHopperType, isSupportedContainerType } from "../sorting/ContainerTypes";
 import { hasInventory } from "./ContainerTypes";
 import { probeDoubleChestSafely } from "./SafeProbe";
 

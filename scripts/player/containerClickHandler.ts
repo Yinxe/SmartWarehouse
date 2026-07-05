@@ -8,7 +8,7 @@
 import { world, system } from "@minecraft/server";
 import type { Player } from "@minecraft/server"
 import type { BlockLocation } from "../types";
-import { isSupportedContainerType } from "../lib/ContainerTypes";
+import { isSupportedContainerType } from "../sorting/ContainerTypes";
 import type { WarehouseService } from "../warehouse/WarehouseService";
 import { showContainerRoleMenu } from "../ui/ContainerRoleMenu";
 import { Logger } from "../util/Logger";

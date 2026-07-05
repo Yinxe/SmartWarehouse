@@ -32,7 +32,7 @@ import type { WarehouseArea, WarehouseId } from "../types";
 import { WarehouseRepository } from "../persistence/WarehouseRepository";
 import { SorterEngine } from "./SorterEngine";
 import { Logger } from "../util/Logger";
-import { isNearAreaXZ } from "../lib/Vector";
+import { isNearAreaXZ } from "../warehouse/Vector";
 
 const log = new Logger("SortingScheduler");
 

@@ -1,5 +1,5 @@
 import type { WarehouseId, WarehouseData } from "../types";
-import { buildWarehouseRuntimeModel, type WarehouseRuntimeModel } from "../lib/WarehouseRuntimeModel";
+import { buildWarehouseRuntimeModel, type WarehouseRuntimeModel } from "../warehouse/WarehouseRuntimeModel";
 
 export class WarehouseRuntimeRegistry {
   private readonly models = new Map<WarehouseId, WarehouseRuntimeModel>();

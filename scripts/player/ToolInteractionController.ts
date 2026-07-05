@@ -15,7 +15,7 @@
 import { world, system } from "@minecraft/server";
 import { toBlockLocation } from "../types";
 import { Logger } from "../util/Logger";
-import { isSupportedContainerType } from "../lib/ContainerTypes";
+import { isSupportedContainerType } from "../sorting/ContainerTypes";
 import type { WarehouseRepository } from "../persistence/WarehouseRepository";
 import type { WarehouseService } from "../warehouse/WarehouseService";
 import type { ModConfigStore } from "../persistence/ModConfigStore";

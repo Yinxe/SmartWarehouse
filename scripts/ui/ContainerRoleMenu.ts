@@ -3,9 +3,9 @@ import type { ContainerId, ContainerRole, StoredContainer, WarehouseData } from 
 import { ROLE_DESCRIPTIONS, ROLE_LABELS, ROLE_ORDER } from "../types";
 import { canManageWarehouse } from "../player/PlayerAuth";
 import { SlotOrganizer } from "../sorting/SlotOrganizer";
-import { formatOrganizeResult } from "../lib/OrganizeFormatter";
+import { formatOrganizeResult } from "../ui/OrganizeFormatter";
 import type { WarehouseService } from "../warehouse/WarehouseService";
-import { getFamilyPurity } from "../lib/ContainerView";
+import { getFamilyPurity } from "../sorting/ContainerView";
 import { getContainerFromStored } from "../sorting/ContainerAccess";
 import { getFamilyById } from "../data/ItemFamilies";
 import { formatContainerCapacityLine, setContainerStats, CAPACITY_WARNING_THRESHOLD } from "./WarehouseStats";

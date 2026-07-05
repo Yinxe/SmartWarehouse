@@ -4,12 +4,12 @@ import { WarehouseRuntimeRegistry } from "../persistence/WarehouseRuntimeRegistr
 import { WarehouseRepository } from "../persistence/WarehouseRepository";
 import type { ContainerId, WarehouseData, WarehouseId, WarehouseRuntimeModel } from "../types";
 import { Logger } from "../util/Logger";
-import { isNearAreaXZ } from "../lib/Vector";
+import { isNearAreaXZ } from "../warehouse/Vector";
 import {
     getBulkChestFirstType,
     getContainerFromStored,
 } from "./ContainerAccess";
-import { isContainerEmpty } from "../lib/ContainerView";
+import { isContainerEmpty } from "../sorting/ContainerView";
 import { MoveJournal } from "./MoveJournal";
 import { SlotOrganizer } from "../sorting/SlotOrganizer";
 import { ContainerSelector } from "./ContainerSelector";

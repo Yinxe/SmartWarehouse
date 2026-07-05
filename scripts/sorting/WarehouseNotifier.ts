@@ -11,8 +11,8 @@
 import { world } from "@minecraft/server";
 import type { WarehouseData, ContainerId, ContainerStats } from "../types";
 import { getOrComputeContainerStats, refreshContainerStats } from "../warehouse/WarehouseStatsService";
-import { isNearAreaXZ } from "../lib/Vector";
-import { CAPACITY_WARNING_THRESHOLD } from "../lib/CapacityWarning";
+import { isNearAreaXZ } from "../warehouse/Vector";
+import { CAPACITY_WARNING_THRESHOLD } from "./CapacityWarning";
 
 /**
  * 通知器——管理冷却状态和玩家消息。

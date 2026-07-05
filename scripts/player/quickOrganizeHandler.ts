@@ -8,8 +8,8 @@
 import { system } from "@minecraft/server";
 import type { Player } from "@minecraft/server";
 import { SlotOrganizer } from "../sorting/SlotOrganizer";
-import { formatOrganizeResult } from "../lib/OrganizeFormatter";
-import { isSupportedContainerType } from "../lib/ContainerTypes";
+import { formatOrganizeResult } from "../ui/OrganizeFormatter";
+import { isSupportedContainerType } from "../sorting/ContainerTypes";
 import { Logger } from "../util/Logger";
 
 const log = new Logger("QuickOrganize");

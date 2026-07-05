@@ -31,8 +31,8 @@ import {
     containerHasType,
     getFamilyPurity,
     isContainerEmpty,
-} from "../lib/ContainerView";
-import { sortByPurityDescending, type ScoredContainer } from "../lib/PurityRanking";
+} from "../sorting/ContainerView";
+import { sortByPurityDescending, type ScoredContainer } from "../sorting/PurityRanking";
 
 const log = new Logger("ContainerSelector");
 

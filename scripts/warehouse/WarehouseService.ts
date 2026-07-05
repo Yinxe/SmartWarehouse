@@ -11,16 +11,16 @@ import type {
 } from "../types";
 import { toBlockLocation, ROLE_LABELS } from "../types";
 import { DEFAULT_WAREHOUSE_SETTINGS, normalizeWarehouseId, WarehouseRepository } from "../persistence/WarehouseRepository";
-import { areaVolume, areasTooClose, isInsideArea, normalizeArea } from "../lib/Vector";
+import { areaVolume, areasTooClose, isInsideArea, normalizeArea } from "../warehouse/Vector";
 import { ContainerScanner } from "./ContainerScanner";
-import { isHopperType, isSupportedContainerType } from "../lib/ContainerTypes";
+import { isHopperType, isSupportedContainerType } from "../sorting/ContainerTypes";
 import { hasInventory } from "./ContainerTypes";
-import { makeContainerId } from "../lib/ContainerId";
-import { compareLocationForPrimary } from "../lib/Vector";
+import { makeContainerId } from "../warehouse/ContainerId";
+import { compareLocationForPrimary } from "../warehouse/Vector";
 import { BoundaryDisplay } from "./BoundaryDisplay";
-import { diffRescanContainers } from "../lib/WarehouseRescanDiff";
+import { diffRescanContainers } from "../warehouse/WarehouseRescanDiff";
 import { invalidateWarehouseStats } from "./WarehouseStatsService";
-import type { WarehouseRescanDiff } from "../lib/WarehouseRescanDiff";
+import type { WarehouseRescanDiff } from "../warehouse/WarehouseRescanDiff";
 import type { ModConfigStore } from "../persistence/ModConfigStore";
 
 /**

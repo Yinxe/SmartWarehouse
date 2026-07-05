@@ -9,7 +9,7 @@ import type { WarehouseRepository } from "../persistence/WarehouseRepository";
 import type { WarehouseService } from "../warehouse/WarehouseService";
 import type { ModConfigStore } from "../persistence/ModConfigStore";
 import { canManageWarehouse } from "../player/PlayerAuth";
-import { isNearAreaXZ } from "../lib/Vector";
+import { isNearAreaXZ } from "../warehouse/Vector";
 
 /** 附近仓库检测范围（格） */
 const NEARBY_MARGIN = 8;

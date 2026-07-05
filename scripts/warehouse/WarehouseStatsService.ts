@@ -14,7 +14,7 @@ import { world, type Container } from "@minecraft/server";
 import type { ContainerId, ContainerStats, StoredContainer, WarehouseData, WarehouseId } from "../types";
 import { getContainerFromStored } from "../sorting/ContainerAccess";
 import { WarehouseStatsStore } from "../persistence/WarehouseStatsStore";
-import { CAPACITY_WARNING_THRESHOLD } from "../lib/CapacityWarning";
+import { CAPACITY_WARNING_THRESHOLD } from "../sorting/CapacityWarning";
 
 // ─── 持久化层 ──────────────────────────────────────────────────
 

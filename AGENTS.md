@@ -30,7 +30,7 @@ RP/                   资源包
 scripts/              TypeScript 源码
   main.ts             入口文件（依赖注入、注册事件和命令）
   types.ts            类型 re-export 汇集点（barrel）
-  domain/             领域层（纯业务逻辑，零 Minecraft 依赖）
+  identifiers.ts             领域层（纯业务逻辑，零 Minecraft 依赖）
     shared/           共享值对象（Vector、Json、errors、identifiers）
     inventory/        容器清单值对象（MessinessScore、shulker box）
     sorting/          分拣策略（SortingPolicy、CapacityCheck、FamilyPurity、IndexSelfHealing）
@@ -68,7 +68,7 @@ tools/                维护工具（generateItemFamilies.mjs、annotateFamilies
   application/*UseCase   ← 用例编排（事务+协调）
        ↙        ↘
 领域层（Domain Layer）   基础设施层（Infrastructure Layer）
-  domain/          ←→    infrastructure/
+  identifiers.ts          ←→    infrastructure/
   纯业务逻辑              Minecraft 运行时适配器
   零外部依赖              持久化、容器访问、粒子效果
   可单元测试              调度器、搜索引擎

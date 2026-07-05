@@ -6,11 +6,11 @@
  */
 
 import { Table, Cell } from "./Table";
-import { CAPACITY_WARNING_THRESHOLD } from "../lib/CapacityWarning";
+import { CAPACITY_WARNING_THRESHOLD } from "../sorting/CapacityWarning";
 import type { WarehouseStats, RoleStats } from "../warehouse/WarehouseStatsService";
 
 // 为兼容旧导入路径重新导出基础函数
-export { CAPACITY_WARNING_THRESHOLD } from "../lib/CapacityWarning";
+export { CAPACITY_WARNING_THRESHOLD } from "../sorting/CapacityWarning";
 export {
   setContainerStats,
   invalidateWarehouseStats,

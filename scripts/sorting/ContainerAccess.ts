@@ -2,8 +2,8 @@ import type { BlockInventoryComponent, Dimension, ItemInventoryComponent } from 
 import { Container, ItemStack } from "@minecraft/server";
 import type { StoredContainer } from "../types";
 import type { MoveJournal } from "./MoveJournal";
-import { isShulkerBoxItem } from "../lib/ContainerInventory";
-export { isShulkerBoxItem } from "../lib/ContainerInventory";
+import { isShulkerBoxItem } from "../sorting/ContainerInventory";
+export { isShulkerBoxItem } from "../sorting/ContainerInventory";
 
 /**
  * 安全地从持久化存储的容器信息中获取 Minecraft 方块容器对象（`Container`）。

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { WarehouseData } from "../../scripts/types";
-import { buildWarehouseRuntimeModel } from "../../scripts/lib/WarehouseRuntimeModel";
+import { buildWarehouseRuntimeModel } from "../../scripts/warehouse/WarehouseRuntimeModel";
 
 function baseWarehouse(): WarehouseData {
   return {
