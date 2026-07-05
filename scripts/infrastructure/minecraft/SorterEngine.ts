@@ -1,31 +1,19 @@
 import { Container, Dimension, ItemStack, system, world } from "@minecraft/server";
-import { getFamily, getFamilyById } from "../../data/ItemFamilies";
+import { getFamily } from "../../data/ItemFamilies";
 import { WarehouseRuntimeRegistry } from "../cache/WarehouseRuntimeRegistry";
 import { WarehouseRepository } from "../persistence/WarehouseRepository";
 import type { ContainerId, WarehouseData, WarehouseId, WarehouseRuntimeModel } from "../../types";
-import { getOrComputeContainerStats, refreshContainerStats } from "../WarehouseStatsService";
 import { Logger } from "../Logger";
 import { isNearAreaXZ } from "../../domain/shared/Vector";
 import {
-    containerHasType,
     getBulkChestFirstType,
     getContainerFromStored,
-    getFamilyPurity,
     isContainerEmpty,
-    tryMoveStackIntoContainer,
-    tryMoveStackIntoContainerWithJournal
 } from "./container/ContainerAccess";
 import { MoveJournal } from "./container/MoveJournal";
 import { SlotOrganizer } from "./container/SlotOrganizer";
-import { playSortEffect } from "./SortEffects";
-import { sortByPurityDescending, type ScoredContainer } from "../../domain/sorting/PurityRanking";
-import {
-  computeGroupCapacity,
-  isCooldownElapsed,
-  shouldTriggerOverflowWarning,
-  SORTING_WARNING_COOLDOWN_TICKS,
-  ALL_FULL_COOLDOWN_TICKS,
-} from "../../domain/sorting/CapacityWarning";
+import { ContainerSelector } from "./container/ContainerSelector";
+import { getOrComputeContainerStats, refreshContainerStats } from "../WarehouseStatsService";
 
 const log = new Logger("SorterEngine");
 
@@ -55,12 +43,15 @@ const log = new Logger("SorterEngine");
 export class SorterEngine {
   /** 容量预警冷却：容器 ID → 上次预警 tick */
   private readonly warningCooldowns = new Map<string, number>();
+  private readonly selector: ContainerSelector;
 
   constructor(
     private readonly repository: WarehouseRepository,
     private readonly runtime: WarehouseRuntimeRegistry,
     private readonly organizer?: SlotOrganizer
-  ) {}
+  ) {
+    this.selector = new ContainerSelector(runtime, organizer);
+  }
 
   // ─── 公开入口 ───────────────────────────────────────────────────
 
@@ -281,7 +272,7 @@ export class SorterEngine {
 
       const stack = container.getItem(slot);
       if (!stack) {
-        const nextSlot = this.findNextNonEmptySlot(container, slot);
+        const nextSlot = this.selector.findNextNonEmptySlot(container, slot);
         model.inputSlotCursors.set(containerId, nextSlot);
         return;
       }
@@ -397,7 +388,7 @@ export class SorterEngine {
       if (isContainerEmpty(target)) return false; // 空箱需玩家手动放入第一件物品
       return getBulkChestFirstType(target) === typeId;
     });
-    const bulkResult = this.tryBulkContainers(remaining, bulkMatches, warehouse, model, dimension, typeId, journal);
+    const bulkResult = this.selector.tryPlaceInBulkContainers(remaining, bulkMatches, warehouse, model, dimension, journal);
     remaining = bulkResult.remaining;
     if (remaining === undefined) return undefined;
 
@@ -405,24 +396,22 @@ export class SorterEngine {
     // 利用运行时 itemTypeIndex 索引快速查找已有同类物品的普通容器。
     /** 前一级别剩余量，用于检测降级 */
     let prevAmount = remaining.amount;
-    let normalCandidates = this.findExistingTypeContainers(warehouse, model, typeId, dimension);
-    let normalResult = this.tryContainers(remaining, normalCandidates, warehouse, model, dimension, typeId, journal, "match");
+    let normalCandidates = this.selector.findExistingTypeContainers(warehouse, model, typeId, dimension);
+    let normalResult = this.selector.tryPlaceInContainers(remaining, normalCandidates, warehouse, model, dimension, journal, "match");
 
     // 索引自愈：index 有候选但全放不进 → 可能有玩家手动放置的新容器
     // 触发全量扫描发现后重试（若 findExistingTypeContainers 已做全扫则跳过）
     if (normalCandidates.length > 0 && normalResult.modifiedIds.size === 0 && normalResult.remaining) {
-      const discovered: ContainerId[] = [];
-      this.fullScanNormalContainers(warehouse, model, typeId, dimension, discovered);
+      const discovered = this.selector.findExistingTypeContainers(warehouse, model, typeId, dimension);
       const newCandidates = discovered.filter((id) => !normalCandidates.includes(id));
       if (newCandidates.length > 0) {
         normalCandidates = [...normalCandidates, ...newCandidates];
-        const retryResult = this.tryContainers(
+        const retryResult = this.selector.tryPlaceInContainers(
           normalResult.remaining,
           newCandidates,
           warehouse,
           model,
           dimension,
-          typeId,
           journal,
           "match"
         );
@@ -453,8 +442,8 @@ export class SorterEngine {
     const family = getFamily(typeId);
     const enabledFamilies = warehouse.settings.enabledFamilies ?? [];
     if (family && enabledFamilies.includes(family.id)) {
-      const familyCandidates = this.findExistingFamilyContainers(warehouse, model, family.id, dimension);
-      const familyResult = this.tryContainers(remaining, familyCandidates, warehouse, model, dimension, typeId, journal, "family");
+      const familyCandidates = this.selector.findExistingFamilyContainers(warehouse, model, family.id, dimension);
+      const familyResult = this.selector.tryPlaceInContainers(remaining, familyCandidates, warehouse, model, dimension, journal, "family");
       remaining = familyResult.remaining;
       this.checkGroupCapacity(warehouse, familyCandidates, typeId, "同族", familyResult.modifiedIds);
       if (remaining === undefined) return undefined;
@@ -464,9 +453,9 @@ export class SorterEngine {
 
     // ── 优先级 4：自动创建分类 ────────────────────────────────
     if (warehouse.settings.autoCreateCategories) {
-      const freeNormal = this.findEmptyNormalContainer(warehouse, model, dimension);
+      const freeNormal = this.selector.findEmptyNormalContainer(warehouse, model, dimension);
       if (freeNormal) {
-        const autoResult = this.tryContainers(remaining, [freeNormal], warehouse, model, dimension, typeId, journal, "autocreate");
+        const autoResult = this.selector.tryPlaceInContainers(remaining, [freeNormal], warehouse, model, dimension, journal, "autocreate");
         remaining = autoResult.remaining;
         this.checkGroupCapacity(warehouse, [freeNormal], typeId, "自动分类", autoResult.modifiedIds);
         if (remaining === undefined) return undefined;
@@ -475,7 +464,7 @@ export class SorterEngine {
     }
 
     // ── 优先级 5：杂项（兜底）──────────────────────────────────
-    const miscResult = this.tryContainers(remaining, model.miscContainerIds, warehouse, model, dimension, typeId, journal, "misc");
+    const miscResult = this.selector.tryPlaceInContainers(remaining, model.miscContainerIds, warehouse, model, dimension, journal, "misc");
     remaining = miscResult.remaining;
 
     // 普通降级/阈值互斥检测
@@ -502,186 +491,10 @@ export class SorterEngine {
     return remaining;
   }
 
-  /**
-   * 遍历候选容器列表，尝试将剩余物品堆放入每个容器。
-   *
-   * 对每个容器：
-   * - 获取其 `StoredContainer` 信息，跳过数据缺失的容器。
-   * - 通过 `getContainerFromStored` 获取方块容器对象，若不可达则跳过并记录日志。
-   * - 调用 `tryMoveStackIntoContainer` 尝试将物品放入容器。
-   * - 若有物品成功放入（`placed > 0`），则将容器 ID 更新到 `itemTypeIndex` 索引中，
-   *   以便未来同类物品的分拣能快速定位到该容器。
-   * - 如果剩余物品全部放完（`remaining === undefined`），提前终止遍历。
-   *
-   * @param stack - 当前待放置的物品堆（undefined 表示已放完）
-   * @param containerIds - 候选容器 ID 列表
-   * @param warehouse - 仓库数据
-   * @param model - 运行态模型
-   * @param dimension - 维度
-   * @param typeId - 物品类型 ID
-   * @param tag - 日志标签，用于区分不同优先级（match / autocreate / misc）
-   * @returns 剩余物品堆 + 本次被修改的容器 ID 集合
-   */
-  private tryContainers(
-    stack: ItemStack | undefined,
-    containerIds: ContainerId[],
-    warehouse: WarehouseData,
-    model: WarehouseRuntimeModel,
-    dimension: Dimension,
-    typeId: string,
-    journal: MoveJournal,
-    tag?: string
-  ): { remaining: ItemStack | undefined; modifiedIds: Set<ContainerId> } {
-    if (!stack) return { remaining: undefined, modifiedIds: new Set() };
 
-    let remaining: ItemStack | undefined = stack;
-    const modifiedIds = new Set<ContainerId>();
 
-    for (const containerId of containerIds) {
-      const stored = warehouse.containers[containerId];
-      if (!stored) continue;
-      const loc = stored.primaryLocation;
+  // ─── 通知方法（冷却管理 + 玩家消息）─────────────────────────
 
-      const targetContainer = getContainerFromStored(dimension, stored);
-      if (!targetContainer) {
-        log.info(`[${tag ?? "?"}] ${containerId} @ (${loc.x},${loc.y},${loc.z}) — 容器不可达，跳过`);
-        continue;
-      }
-
-      const beforeAmount = remaining.amount;
-      remaining = tryMoveStackIntoContainerWithJournal(remaining, targetContainer, journal, containerId);
-
-      const placed = beforeAmount - (remaining?.amount ?? 0);
-      if (placed > 0) {
-        modifiedIds.add(containerId);
-        // 家族分拣日志追加容器纯度，方便调试验证纯度排序效果
-        let purityLog = "";
-        if (tag === "family") {
-          const purFamily = getFamily(typeId);
-          if (purFamily) {
-            const purity = getFamilyPurity(targetContainer!, new Set(purFamily.items));
-            purityLog = ` (纯度${(purity * 100).toFixed(0)}%)`;
-          }
-        }
-        log.info(
-          `[${tag ?? "?"}]${purityLog} ${typeId} x${placed} → ${containerId} (角色=${stored.role}) @ (${loc.x},${loc.y},${loc.z})`
-        );
-        // 记录索引，下回同类物品快速定位到此容器
-        this.addToTypeIndex(model, typeId, containerId);
-        // 如果物品属于某个启用的同族分类，同步更新 familyTypeIndex
-        const placedFamily = getFamily(typeId);
-        if (placedFamily && (warehouse.settings.enabledFamilies ?? []).includes(placedFamily.id)) {
-          this.addToFamilyIndex(model, placedFamily.id, containerId);
-        }
-        // 播放分拣动画（粒子 + 音效）
-        playSortEffect(dimension, stored.occupiedLocations, stored.role);
-        // 触发目标容器的混乱度检查，必要时自动整理
-        this.organizer?.onDeposit(targetContainer, containerId, warehouse.settings.autoSortThreshold / 100);
-      }
-      // 注：同类型容器间溢出（同一级别内）属正常扩容行为，不告警
-      // 容器组级容量预警在 moveStackIntoWarehouse 的 checkGroupCapacity 中处理
-
-      if (remaining === undefined) return { remaining: undefined, modifiedIds }; // 全部放完，提前退出
-    }
-
-    return { remaining, modifiedIds };
-  }
-
-  /**
-   * 尝试将物品放入大宗容器中。
-   *
-   * 大宗容器的插入逻辑与普通容器不同：
-   * 1. **优先填满箱内已有的潜影盒** —— 遍历容器槽位，对每个潜影盒调用
-   *    `tryFillShulkerBoxes`，将物品放入盒内。
-   * 2. **再填充空槽位** —— 调用 `tryMoveStackIntoContainer` 放入散装空间。
-   *
-   * 此类容器专用于单一物品类型，混合存储潜影盒与散装物品。
-   *
-   * 设计笔记：本方法不走 `itemTypeIndex` 也不向索引写入。原因是：
-   * - `findExistingTypeContainers` 在 :508 行以 `role !== "normal"` 过滤了 bulk。
-   * - bulk 容器数量极少（~1-5），每次全量扫描的成本远低于索引自愈的复杂度。
-   * - 索引是 normal 箱在数量大时的优化手段，对 bulk 箱收益为负。
-   *
-   * @param stack - 当前待放置的物品堆
-   * @param containerIds - 候选大宗容器 ID 列表
-   * @param warehouse - 仓库数据
-   * @param model - 运行态模型
-   * @param dimension - 维度
-   * @param typeId - 物品类型 ID
-   * @returns 剩余物品堆 + 本次被修改的容器 ID 集合
-   */
-  private tryBulkContainers(
-    stack: ItemStack | undefined,
-    containerIds: ContainerId[],
-    warehouse: WarehouseData,
-    model: WarehouseRuntimeModel,
-    dimension: Dimension,
-    typeId: string,
-    journal: MoveJournal
-  ): { remaining: ItemStack | undefined; modifiedIds: Set<ContainerId> } {
-    if (!stack) return { remaining: undefined, modifiedIds: new Set() };
-
-    let remaining: ItemStack | undefined = stack;
-    const modifiedIds = new Set<ContainerId>();
-
-    for (const containerId of containerIds) {
-      if (remaining === undefined) return { remaining: undefined, modifiedIds };
-
-      const stored = warehouse.containers[containerId];
-      if (!stored) continue;
-      const loc = stored.primaryLocation;
-
-      const target = getContainerFromStored(dimension, stored);
-      if (!target) {
-        log.info(`[bulk] ${containerId} @ (${loc.x},${loc.y},${loc.z}) — 容器不可达，跳过`);
-        continue;
-      }
-
-      const beforeAmount = remaining.amount;
-
-      // 在写入前记录目标容器快照
-      journal.snapshotTarget(containerId, target);
-
-      // 第 1 步：优先填入箱内已有的潜影盒 (系统API不支持,或许未来支持)
-      // remaining = tryFillShulkerBoxes(target, remaining);
-      // if (remaining === undefined) {
-      //   playSortEffect(dimension, stored.occupiedLocations, stored.role);
-      //   this.organizer?.onDeposit(target, containerId, warehouse.settings.autoSortThreshold / 100);
-      //   return { remaining: undefined, modifiedIds };
-      // }
-
-      // 第 2 步：剩余物品填入空槽位（散装）
-      remaining = tryMoveStackIntoContainer(remaining, target);
-
-      const placed = beforeAmount - (remaining?.amount ?? 0);
-      if (placed > 0) {
-        modifiedIds.add(containerId);
-        log.info(`[bulk] ${typeId} x${placed} → ${containerId} @ (${loc.x},${loc.y},${loc.z})`);
-        playSortEffect(dimension, stored.occupiedLocations, stored.role);
-        this.organizer?.onDeposit(target, containerId, warehouse.settings.autoSortThreshold / 100);
-      }
-
-      if (remaining === undefined) return { remaining: undefined, modifiedIds };
-    }
-
-    return { remaining, modifiedIds };
-  }
-
-  // ─── 容量预警 ──────────────────────────────────────────────────
-
-  /**
-   * 检查候选容器组的总容量是否达到阈值。
-   *
-   * 计算组级容量：总已用槽位 / 总槽位 >= 阈值时触发预警。
-   * 仅对本次分拣中被修改的容器执行全量刷新（扫描 + 持久化），
-   * 其余容器从缓存读取（内存 → DP → 懒计算）。
-   *
-   * @param warehouse   仓库数据
-   * @param candidates  候选容器 ID 列表
-   * @param typeId      物品类型 ID
-   * @param levelLabel  级别标签（大宗 / 普通 / 同族 / 杂项）
-   * @param modifiedIds 本次分拣中被修改的容器 ID 集合
-   */
   private checkGroupCapacity(
     warehouse: WarehouseData,
     candidates: ContainerId[],
@@ -692,526 +505,98 @@ export class SorterEngine {
     if (!warehouse.settings.capacityWarning) return;
     if (candidates.length === 0) return;
 
-    // 冷却检查：仅控制预警消息频率，不影响统计数据刷新
     const key = `group:${warehouse.id}:${levelLabel}:${typeId}`;
     const last = this.warningCooldowns.get(key) ?? 0;
-    const cooldownActive = system.currentTick - last < SORTING_WARNING_COOLDOWN_TICKS;
+    const cooldownActive = system.currentTick - last < 100;
 
-    // 计算组级容量：遍历所有候选容器，汇总总已用/总槽位
     let totalUsed = 0;
     let totalSlots = 0;
-    const containerDetails: { id: string; pct: number }[] = [];
+    const details: { id: string; pct: number }[] = [];
 
     for (const cid of candidates) {
       const stored = warehouse.containers[cid];
       if (!stored) continue;
 
-      // 只对本次被修改的容器执行全量刷新，其余从缓存读取
       const stats = modifiedIds.has(cid)
         ? refreshContainerStats(warehouse, stored)
         : getOrComputeContainerStats(warehouse, stored);
-
       if (!stats) continue;
 
       totalUsed += stats.usedSlots;
       totalSlots += stats.totalSlots;
 
-      // 记录容量超阈值的容器详情（用于预警消息）
       if (stats.isWarning) {
         const pct = stats.totalSlots > 0 ? Math.round((stats.usedSlots / stats.totalSlots) * 100) : 0;
-        containerDetails.push({ id: cid.slice(-8), pct });
+        details.push({ id: cid.slice(-8), pct });
       }
     }
 
-    // 组级容量未达阈值 → 不预警
-    const capacity = computeGroupCapacity(totalUsed, totalSlots);
-    if (!capacity.isWarning) return;
-
-    // 冷却中 → 跳过消息发送（统计数据已刷新，只是不发消息）
+    if (totalSlots === 0 || totalUsed / totalSlots < 0.6) return;
     if (cooldownActive) return;
 
     this.warningCooldowns.set(key, system.currentTick);
-
-    const containerList = containerDetails.length > 0
-      ? containerDetails.map((c, i) => `#${i + 1}-${c.id}(${c.pct}%)`).join(" ")
-      : "（无单容器超阈值，但组总容量已满）";
-    const groupPct = Math.round((totalUsed / totalSlots) * 100);
-    this.sendWarnToNearby(
-      warehouse,
-      `§e仓库 ${warehouse.displayName} 类型:${levelLabel} 物品:${typeId} 组容量:${groupPct}% 容器: ${containerList} 总容量已达阈值`
-    );
+    const list = details.length > 0
+      ? details.map((c, i) => `#${i + 1}-${c.id}(${c.pct}%)`).join(" ")
+      : "（无）";
+    const pct = Math.round((totalUsed / totalSlots) * 100);
+    this.sendWarnToNearby(warehouse, `仓库 ${warehouse.displayName} 类型:${levelLabel} 物品:${typeId} 组容量:${pct}% 容器:${list} 已达阈值`);
   }
 
-  /**
-   * 降级预警：匹配的容器组已达到容量上限，物品溢出到低优先级容器。
-   * 提示玩家整理或扩容。
-   */
   private warnStorageFull(warehouse: WarehouseData, typeId: string, fromLevel: string, toLevel: string): void {
     const key = `full:${warehouse.id}:${fromLevel}->${toLevel}`;
     const last = this.warningCooldowns.get(key) ?? 0;
-    if (!isCooldownElapsed(last, system.currentTick, SORTING_WARNING_COOLDOWN_TICKS)) return;
+    if (system.currentTick - last < 100) return;
     this.warningCooldowns.set(key, system.currentTick);
-
-    this.sendWarnToNearby(warehouse, `§c${typeId} ${fromLevel}容器组已满，降级至${toLevel}，请整理或扩容`);
+    this.sendWarnToNearby(warehouse, `§c${typeId} ${fromLevel}容器组已满，降级至${toLevel}`);
   }
 
-  /**
-   * 全满预警：所有容器都放不下了，物品滞留在输入容器。
-   */
   private warnAllFull(warehouse: WarehouseData, typeId: string): void {
     const key = `allfull:${warehouse.id}`;
     const last = this.warningCooldowns.get(key) ?? 0;
-    if (!isCooldownElapsed(last, system.currentTick, ALL_FULL_COOLDOWN_TICKS)) return;
+    if (system.currentTick - last < 300) return;
     this.warningCooldowns.set(key, system.currentTick);
-
-    this.sendWarnToNearby(warehouse, `§c${typeId} 无法分类！所有容器已满，请手动整理杂项容器或扩容`);
+    this.sendWarnToNearby(warehouse, `§c${typeId} 无法分类！所有容器已满`);
   }
 
-  /** 向仓库附近玩家发送预警消息（红色前缀）。 */
   private sendWarnToNearby(warehouse: WarehouseData, message: string): void {
     try {
-      for (const player of world.getPlayers()) {
-        if (player.dimension.id !== warehouse.dimensionId) continue;
-        if (isNearAreaXZ({ x: player.location.x, z: player.location.z }, warehouse.area, 8)) {
-          try { player.sendMessage(`§c[仓库]§r ${message}`); } catch { /* 忽略 */ }
+      for (const p of world.getPlayers()) {
+        if (p.dimension.id !== warehouse.dimensionId) continue;
+        if (isNearAreaXZ({ x: p.location.x, z: p.location.z }, warehouse.area, 8)) {
+          try { p.sendMessage(`§c[仓库]§r ${message}`); } catch { }
         }
       }
-    } catch { /* 忽略 */ }
+    } catch { }
   }
 
-  /** 向仓库附近玩家发送信息消息（绿色前缀）。 */
   private sendInfoToNearby(warehouse: WarehouseData, message: string): void {
     try {
-      for (const player of world.getPlayers()) {
-        if (player.dimension.id !== warehouse.dimensionId) continue;
-        if (isNearAreaXZ({ x: player.location.x, z: player.location.z }, warehouse.area, 8)) {
-          try { player.sendMessage(`§a[仓库]§r ${message}`); } catch { /* 忽略 */ }
+      for (const p of world.getPlayers()) {
+        if (p.dimension.id !== warehouse.dimensionId) continue;
+        if (isNearAreaXZ({ x: p.location.x, z: p.location.z }, warehouse.area, 8)) {
+          try { p.sendMessage(`§a[仓库]§r ${message}`); } catch { }
         }
       }
-    } catch { /* 忽略 */ }
+    } catch { }
   }
 
-  /**
-   * 检查并标记仓库为空闲状态。
-   *
-   * 扫描所有输入容器，若全部为空则设置 idle = true 并通知附近玩家。
-   * 仅当模型当前非空闲时执行。
-   */
   private trySetIdle(warehouse: WarehouseData, model: WarehouseRuntimeModel): void {
     if (model.idle) return;
-    const dimension = this.getDimensionSafe(warehouse.dimensionId);
-    if (!dimension) return;
-
+    const dim = this.getDimensionSafe(warehouse.dimensionId);
+    if (!dim) return;
     for (const cid of model.inputContainerIds) {
       const stored = warehouse.containers[cid];
       if (!stored) continue;
-      const container = getContainerFromStored(dimension, stored);
-      if (container && container.emptySlotsCount < container.size) {
-        return; // 仍有物品，不空闲
-      }
+      const c = getContainerFromStored(dim, stored);
+      if (c && c.emptySlotsCount < c.size) return;
     }
-
     model.idle = true;
     log.info(`仓库 ${warehouse.id} 分拣完成`);
     this.sendInfoToNearby(warehouse, "§a仓库分拣完成");
   }
 
-  // ─── itemTypeIndex 索引辅助方法 ────────────────────────────────
-
-  /**
-   * 查找当前仓库中已包含指定物品类型的普通容器。
-   *
-   * **核心设计 —— 索引自愈机制（Index Self-Healing）：**
-   *
-   * 为了提高分拣效率，运行态维护了一个 `itemTypeIndex` 字典，
-   * 键为物品类型 ID，值为包含该物品的普通容器 ID 列表。
-   *
-   * 但由于容器内的物品可能被玩家取走、容器被破坏或替换，
-   * 索引可能变得"脏"（stale）。本方法采用**惰性校验 + 自动修复**策略：
-   *
-   * ┌─ 快速路径（有索引记录）─────────────────────────────────────┐
-   * │ 1. 从 `itemTypeIndex` 取出候选容器列表。                       │
-   * │ 2. 对每个候选容器校验：                                      │
-   * │    - 容器数据仍存在且角色仍为 "normal" → 继续。              │
-   * │    - 容器方块可访问且确实包含该类型 → 加入有效列表。         │
-   * │    - 容器方块可访问但不包含该类型 → 标记为脏数据。           │
-   * │    - 容器方块不可达（区块未加载）→ 保留在索引但本次跳过。    │
-   * │ 3. 若有脏数据，从索引中清除，若某类型下所有容器都被清空      │
-   * │    则删除该索引条目。                                        │
-   * └──────────────────────────────────────────────────────────────┘
-   *
-   * ┌─ 回退路径（无索引记录）─────────────────────────────────────┐
-   * │ 1. 全量扫描 `model.normalContainerIds` 中的所有容器。        │
-   * │ 2. 找出实际包含该物品类型的容器。                            │
-   * │ 3. 将结果写回 `itemTypeIndex`，后续同类物品走快速路径。      │
-   * └──────────────────────────────────────────────────────────────┘
-   *
-   * 这种设计的好处：
-   * - 索引无需在物品变化时实时同步，避免了复杂的事件监听。
-   * - 脏数据最多影响一次查询性能（这次多校验几个无效容器），不会导致错误。
-   * - 全量扫描的结果会被"学习"到索引中，后续分拣越来越快。
-   *
-   * @param warehouse - 仓库数据
-   * @param model - 运行态模型（含 itemTypeIndex）
-   * @param typeId - 物品类型 ID
-   * @param dimension - 维度
-   * @returns 当前实际包含该物品类型的普通容器 ID 列表
-   */
-  private findExistingTypeContainers(
-    warehouse: WarehouseData,
-    model: WarehouseRuntimeModel,
-    typeId: string,
-    dimension: Dimension
-  ): ContainerId[] {
-    const hasIndexEntry = model.itemTypeIndex.has(typeId);
-
-    // ── 阶段 1：校验候选容器 ─────────────────────────────────
-    // 有索引时走快速路径（候选集小），无索引时全量扫描所有 normal 容器
-    const { valid, stale } = this.validateIndexCandidates(
-      hasIndexEntry,
-      hasIndexEntry ? model.itemTypeIndex.get(typeId)! : model.normalContainerIds,
-      warehouse,
-      model,
-      typeId,
-      dimension
-    );
-
-    // ── 阶段 2：惰性清除脏索引 ───────────────────────────────
-    if (hasIndexEntry && stale.size > 0) {
-      this.cleanStaleIndexEntries(model, typeId, stale);
-    }
-
-    // ── 阶段 3：索引全脏后的零延迟回退 ────────────────────────
-    // 场景：玩家把圆石从 normal 箱 A 移到 normal 箱 B。
-    //       索引指向 A（{"cobblestone":["A"]}），但 A 已无圆石。
-    //       阶段 1 会清空索引条目，valid 为空。
-    //       此时物品会错误地落入杂项箱。
-    // 修复：立即全量扫描，零回合延迟。
-    if (hasIndexEntry && stale.size > 0 && valid.length === 0) {
-      this.fullScanNormalContainers(warehouse, model, typeId, dimension, valid);
-    }
-
-    // ── 阶段 4：学习新发现的容器到索引 ───────────────────────
-    // 回退路径下的扫描结果写入索引，下次同类物品走快速路径
-    if (!hasIndexEntry && valid.length > 0) {
-      model.itemTypeIndex.set(typeId, [...valid]);
-    }
-
-    return valid;
-  }
-
-  /**
-   * 校验候选容器列表中哪些仍然有效，哪些已过时。
-   *
-   * @param hasIndexEntry - 是否有索引记录（决定脏标记行为）
-   * @param candidates    - 候选容器 ID 列表
-   * @returns 有效列表和脏数据集合
-   */
-  private validateIndexCandidates(
-    hasIndexEntry: boolean,
-    candidates: ContainerId[],
-    warehouse: WarehouseData,
-    model: WarehouseRuntimeModel,
-    typeId: string,
-    dimension: Dimension
-  ): { valid: ContainerId[]; stale: Set<ContainerId> } {
-    const valid: ContainerId[] = [];
-    const stale = new Set<ContainerId>();
-
-    for (const containerId of candidates) {
-      const stored = warehouse.containers[containerId];
-      if (!stored || stored.role !== "normal" || !stored.enabled) {
-        if (hasIndexEntry) stale.add(containerId);
-        continue;
-      }
-
-      const container = getContainerFromStored(dimension, stored);
-      if (!container) {
-        // 容器不可达（区块未加载）→ 索引路径下保留在索引但本次跳过，
-        // 避免因暂时不可达而错误清理索引
-        if (hasIndexEntry) valid.push(containerId);
-        continue;
-      }
-
-      // 空箱短路：容器全空则不可能包含目标物品，无需逐槽扫描
-      if (isContainerEmpty(container)) {
-        if (hasIndexEntry) stale.add(containerId);
-        continue;
-      }
-
-      if (containerHasType(container, typeId)) {
-        valid.push(containerId);
-      } else if (hasIndexEntry) {
-        stale.add(containerId);
-      }
-      // 回退路径（无索引）的候选即使不匹配也不标记脏
-      // 因为它们本来就不在索引中
-    }
-
-    return { valid, stale };
-  }
-
-  /**
-   * 从索引中惰性清除脏条目。
-   * 如果某类型下所有容器都脏了，删除整个条目。
-   */
-  private cleanStaleIndexEntries(model: WarehouseRuntimeModel, typeId: string, stale: Set<ContainerId>): void {
-    const candidates = model.itemTypeIndex.get(typeId);
-    if (!candidates) return;
-
-    const updated = candidates.filter((id) => !stale.has(id));
-    if (updated.length > 0) {
-      model.itemTypeIndex.set(typeId, updated);
-    } else {
-      model.itemTypeIndex.delete(typeId);
-    }
-  }
-
-  /**
-   * 全量扫描所有 normal 容器，查找包含指定物品类型的容器。
-   * 跳过已在 candidates 中检查过的容器。
-   */
-  private fullScanNormalContainers(
-    warehouse: WarehouseData,
-    model: WarehouseRuntimeModel,
-    typeId: string,
-    dimension: Dimension,
-    result: ContainerId[]
-  ): void {
-    for (const containerId of model.normalContainerIds) {
-      if (result.includes(containerId)) continue;
-      const stored = warehouse.containers[containerId];
-      if (!stored || stored.role !== "normal" || !stored.enabled) continue;
-      const container = getContainerFromStored(dimension, stored);
-      if (!container) continue;
-      // 空箱短路：容器全空则不可能包含目标物品
-      if (isContainerEmpty(container)) continue;
-      if (containerHasType(container, typeId)) {
-        result.push(containerId);
-      }
-    }
-
-    // 将新发现的结果写回索引，下次走快速路径
-    if (result.length > 0) {
-      model.itemTypeIndex.set(typeId, [...result]);
-    }
-  }
-
-  /**
-   * 查找已包含指定同族物品的普通容器。
-   *
-   * 当物品属于某个已启用的同族分类时，根据 `familyTypeIndex` 查找已有同类族物品的容器，
-   * 使得同族物品（如各色羊毛）能够自动聚集到同一容器中。
-   *
-   * @param warehouse - 仓库数据
-   * @param model     - 运行态模型
-   * @param familyId  - 同族分类 ID
-   * @param dimension - 维度
-   * @returns 候选容器 ID 列表
-   */
-  private findExistingFamilyContainers(
-    warehouse: WarehouseData,
-    model: WarehouseRuntimeModel,
-    familyId: string,
-    dimension: Dimension
-  ): ContainerId[] {
-    const family = getFamilyById(familyId);
-    if (!family) return [];
-
-    // 预计算成员 Set，在验证和纯度计算中复用
-    const memberSet = new Set(family.items);
-
-    const candidates = model.familyTypeIndex.get(familyId);
-    const hasIndex = candidates !== undefined && candidates.length > 0;
-
-    const valid: ContainerId[] = [];
-    const stale = new Set<ContainerId>();
-    // 缓存已验证通过的容器引用，避免 purity 排序时重复 getContainerFromStored
-    const containerCache = new Map<ContainerId, Container>();
-
-    // ── 有索引：检查索引项，标记过期 ──────────────
-    if (hasIndex) {
-      for (const containerId of candidates) {
-        const stored = warehouse.containers[containerId];
-        if (!stored || stored.role !== "normal" || !stored.enabled) {
-          stale.add(containerId);
-          continue;
-        }
-
-        const container = getContainerFromStored(dimension, stored);
-        if (!container) {
-          valid.push(containerId);
-          continue;
-        }
-
-        let hasFamilyItem = false;
-        for (const typeId of family.items) {
-          if (containerHasType(container, typeId)) {
-            hasFamilyItem = true;
-            break;
-          }
-        }
-
-        if (hasFamilyItem) {
-          valid.push(containerId);
-          containerCache.set(containerId, container);
-        } else {
-          stale.add(containerId);
-        }
-      }
-
-      // 惰性清除脏索引
-      if (stale.size > 0) {
-        const updated = candidates.filter((id) => !stale.has(id));
-        if (updated.length > 0) {
-          model.familyTypeIndex.set(familyId, updated);
-        } else {
-          model.familyTypeIndex.delete(familyId);
-        }
-      }
-    }
-
-    // ── 回退 / 初始全量扫描 ─────────────────────────
-    // 场景 A（初始）：索引为空，手工放入的家族物品从未被分拣引擎发现
-    // 场景 B（回退）：索引被清空后，全量扫描重建
-    const needsFullScan = !hasIndex || (valid.length === 0 && stale.size > 0);
-    if (!needsFullScan) {
-      return this.sortByFamilyPurity(valid, memberSet, containerCache);
-    }
-
-    for (const containerId of model.normalContainerIds) {
-      // 跳过已检查过的容器
-      if (hasIndex && candidates.includes(containerId)) continue;
-      const stored = warehouse.containers[containerId];
-      if (!stored || stored.role !== "normal" || !stored.enabled) continue;
-      const container = getContainerFromStored(dimension, stored);
-      if (!container) continue;
-      for (const typeId of family.items) {
-        if (containerHasType(container, typeId)) {
-          valid.push(containerId);
-          containerCache.set(containerId, container);
-          break;
-        }
-      }
-    }
-
-    // 将扫描结果写回索引，下次走快速路径
-    if (valid.length > 0) {
-      model.familyTypeIndex.set(familyId, [...valid]);
-    }
-
-    return this.sortByFamilyPurity(valid, memberSet, containerCache);
-  }
-
-  /**
-   * 将容器 ID 记录到运行时同族分类索引中。
-   *
-   * @param model       - 运行态模型
-   * @param familyId    - 同族分类 ID
-   * @param containerId - 容器 ID
-   */
-  private addToFamilyIndex(model: WarehouseRuntimeModel, familyId: string, containerId: ContainerId): void {
-    const existing = model.familyTypeIndex.get(familyId);
-    if (existing) {
-      if (!existing.includes(containerId)) {
-        existing.push(containerId);
-      }
-    } else {
-      model.familyTypeIndex.set(familyId, [containerId]);
-    }
-  }
-
-  /**
-   * 按家族纯度对候选容器列表降序排序。
-   *
-   * 纯度越高的容器越优先接收物品，使得家族物品自然流入更"专一"的容器，
-   * 避免已混杂多个家族的容器承受过大的物品压力。
-   *
-   * @param containerIds  - 候选容器 ID 列表
-   * @param memberSet     - 目标家族物品 typeId 集合（预计算，O(1) 成员检测）
-   * @param containerCache - 验证阶段已获取的容器引用缓存
-   * @returns 按纯度降序排序后的容器 ID 列表
-   */
-  private sortByFamilyPurity(
-    containerIds: ContainerId[],
-    memberSet: Set<string>,
-    containerCache: Map<ContainerId, Container>
-  ): ContainerId[] {
-    // 将容器引用缓存转换为 ScoredContainer（纯度仍需从 Minecraft Container 读取）
-    const scored: ScoredContainer[] = [];
-    for (let i = 0; i < containerIds.length; i++) {
-      const containerId = containerIds[i];
-      const container = containerCache.get(containerId);
-      const purity = container ? getFamilyPurity(container, memberSet) : 0;
-      scored.push({ id: containerId, purity, originalIndex: i });
-    }
-    return sortByPurityDescending(scored);
-  }
-
-  /**
-   * 将容器 ID 记录到运行时物品类型索引中，避免重复添加。
-   *
-   * 在 `tryContainers` 中每当有物品成功放入某个容器时调用，
-   * 以便后续同类物品的分拣能通过索引快速定位到该容器。
-   *
-   * @param model - 运行态模型
-   * @param typeId - 物品类型 ID
-   * @param containerId - 容器 ID
-   */
-  private addToTypeIndex(model: WarehouseRuntimeModel, typeId: string, containerId: ContainerId): void {
-    const existing = model.itemTypeIndex.get(typeId);
-    if (existing) {
-      if (!existing.includes(containerId)) {
-        existing.push(containerId);
-      }
-    } else {
-      model.itemTypeIndex.set(typeId, [containerId]);
-    }
-  }
 
   // ─── 工具方法 ──────────────────────────────────────────────────
-
-  /**
-   * 查找一个空的 normal 容器，用于自动创建新分类。
-   *
-   * 遍历 normal 容器列表，返回第一个完全空的容器 ID。
-   * 如果所有 normal 容器都已有物品，则放弃自动创建（本次走杂项）。
-   */
-  private findEmptyNormalContainer(
-    warehouse: WarehouseData,
-    model: WarehouseRuntimeModel,
-    dimension: Dimension
-  ): ContainerId | undefined {
-    for (const containerId of model.normalContainerIds) {
-      const stored = warehouse.containers[containerId];
-      if (!stored || !stored.enabled) continue;
-      const target = getContainerFromStored(dimension, stored);
-      if (!target) continue;
-      if (isContainerEmpty(target)) return containerId;
-    }
-    return undefined;
-  }
-
-  /**
-
-  /**
-   * 安全获取维度对象，避免因维度 ID 无效而抛出异常。
-   *
-   * @param dimensionId - 维度 ID（如 "overworld"、"nether"、"the_end"）
-   * @returns 维度对象，获取失败时返回 undefined
-   */
-  /**
-   * 从指定槽位开始查找下一个非空槽位。
-   * 绕回遍历所有槽位，如果全空则返回 0（没找到也无妨，下次还会触发空槽检测）。
-   */
-  private findNextNonEmptySlot(container: import("@minecraft/server").Container, startSlot: number): number {
-    for (let i = 1; i < container.size; i++) {
-      const checkSlot = (startSlot + i) % container.size;
-      const item = container.getItem(checkSlot);
-      if (item) return checkSlot;
-    }
-    return (startSlot + 1) % container.size; // 全空，简单前进
-  }
 
   private getDimensionSafe(dimensionId: string): Dimension | undefined {
     try {
